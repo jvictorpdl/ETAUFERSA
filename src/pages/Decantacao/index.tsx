@@ -653,7 +653,7 @@ const Decantacao: React.FC<ResultsProps> = (props) => {
                                 <span className="tooltiptext">Vazão de clarificação</span>
                                 Q (m³/s)
                             </Title>
-                            <Input
+                            <Input aria-label="Vazão Q (m³/s)"
                                 type="number"
 
                                 onChange={e => setVazao(e.target.value)}
@@ -663,7 +663,7 @@ const Decantacao: React.FC<ResultsProps> = (props) => {
                             <Title>vs (m/dia)
                                 <span className="tooltiptext">Velocidade de sedimentação</span>
                             </Title>
-                            <Input
+                            <Input aria-label="Velocidade de sedimentação vs (m/dia)"
                                 type="number"
 
                                 onChange={e => setvs(e.target.value)}
@@ -674,7 +674,7 @@ const Decantacao: React.FC<ResultsProps> = (props) => {
                                 <span className="tooltiptext">Número das unidades de sedimentação</span>
                                 Nº un. de sedimentação
                             </Title>
-                            <Input
+                            <Input aria-label="Número de unidades de sedimentação"
                                 type="number"
 
                                 onChange={e => setSedmentacao(e.target.value)}
@@ -682,7 +682,7 @@ const Decantacao: React.FC<ResultsProps> = (props) => {
                         </Op>
                         <Op>
                             <Title>Profundidade (m)</Title>
-                            <Input
+                            <Input aria-label="Profundidade (m)"
                                 type="number"
 
                                 onChange={e => setProfund(e.target.value)}

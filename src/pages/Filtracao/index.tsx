@@ -808,14 +808,14 @@ export default function Coagulacao() {
                         <Item>
                             <Title>
                                 Vazão (m³/s)</Title>
-                            <InputCard
+                            <InputCard aria-label="Vazão (m³/s)"
                                 type="number"
                                 onChange={(e) => setVazao(e.target.value)}
                             />
                         </Item>
                         <Item>
                             <Title>Taxa de Filtração (m³/m²dia)</Title>
-                            <InputCard
+                            <InputCard aria-label="Taxa de filtração (m³/m²·dia)"
                                 type="number"
                                 onChange={(e) => settaxaFiltracao(e.target.value)}
                             />
@@ -825,14 +825,14 @@ export default function Coagulacao() {
                                 <span className="tooltipvalue">Número de decantadores</span>
                                 Nº de decantadores
                                 </Title>
-                            <InputCard
+                            <InputCard aria-label="Número de decantadores"
                                 type="number"
                                 onChange={(e) => setDecantadores(e.target.value)}
                             />
                         </Item>
                         <Item>
                             <Title>Largura do decantador (m)</Title>
-                            <InputCard
+                            <InputCard aria-label="Largura do decantador (m)"
                                 type="number"
                                 onChange={(e) => setDecantador(e.target.value)}
                             />
@@ -854,7 +854,7 @@ export default function Coagulacao() {
                             <TableRowContainer >
                                 <TableData>Areia</TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Areia: Altura (m)"
                                         type="text"
                                         onChange={(e) => {
                                             setA1(e.target.value);
@@ -862,7 +862,7 @@ export default function Coagulacao() {
                                     />
                                 </TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Areia: Def (mm)"
                                         type="text"
                                         onChange={(e) => {
                                             setA2(e.target.value);
@@ -870,7 +870,7 @@ export default function Coagulacao() {
                                     />
                                 </TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Areia: C.U"
                                         type="text"
                                         onChange={(e) => {
                                             setA3(e.target.value);
@@ -878,7 +878,7 @@ export default function Coagulacao() {
                                     />
                                 </TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Areia: Massa específica (kg/m³)"
                                         type="text"
                                         onChange={(e) => {
                                             setA4(e.target.value);
@@ -886,7 +886,7 @@ export default function Coagulacao() {
                                     />
                                 </TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Areia: Porosidade"
                                         type="text"
                                         onChange={(e) => {
                                             setA5(e.target.value);
@@ -894,7 +894,7 @@ export default function Coagulacao() {
                                     />
                                 </TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Areia: Coeficiente de esfericidade"
                                         type="text"
                                         onChange={(e) => {
                                             setA6(e.target.value);
@@ -902,7 +902,7 @@ export default function Coagulacao() {
                                     />
                                 </TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Areia: d10 (mm)"
                                         type="text"
                                         onChange={(e) => {
                                             setA7(e.target.value);
@@ -913,7 +913,7 @@ export default function Coagulacao() {
                             <TableRowContainer >
                                 <TableData>Antracito</TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Antracito: Altura (m)"
                                         type="text"
                                         onChange={(e) => {
                                             setAn1(e.target.value);
@@ -921,7 +921,7 @@ export default function Coagulacao() {
                                     />
                                 </TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Antracito: Def (mm)"
                                         type="text"
                                         onChange={(e) => {
                                             setAn2(e.target.value);
@@ -929,7 +929,7 @@ export default function Coagulacao() {
                                     />
                                 </TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Antracito: C.U"
                                         type="text"
                                         onChange={(e) => {
                                             setAn3(e.target.value);
@@ -937,7 +937,7 @@ export default function Coagulacao() {
                                     />
                                 </TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Antracito: Massa específica (kg/m³)"
                                         type="text"
                                         onChange={(e) => {
                                             setAn4(e.target.value);
@@ -945,7 +945,7 @@ export default function Coagulacao() {
                                     />
                                 </TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Antracito: Porosidade"
                                         type="text"
                                         onChange={(e) => {
                                             setAn5(e.target.value);
@@ -953,7 +953,7 @@ export default function Coagulacao() {
                                     />
                                 </TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Antracito: Coeficiente de esfericidade"
                                         type="text"
                                         onChange={(e) => {
                                             setAn6(e.target.value);
@@ -961,7 +961,7 @@ export default function Coagulacao() {
                                     />
                                 </TableData>
                                 <TableData>
-                                    <input
+                                    <input aria-label="Antracito: d10 (mm)"
                                         type="text"
                                         onChange={(e) => {
                                             setAn7(e.target.value);
@@ -977,7 +977,7 @@ export default function Coagulacao() {
 
                                 <Item>
                                     <Title>Largura da calha de lavagem (m)</Title>
-                                    <InputCard
+                                    <InputCard aria-label="Largura da calha de lavagem (m)"
                                         type="number"
                                         onChange={(e) => setCalhaLavagem(e.target.value)}
                                     />
@@ -987,14 +987,14 @@ export default function Coagulacao() {
                                         <span className="tooltipvalue">Número de calhas</span>
                                         Nº de calhas
                                     </Title>
-                                    <InputCard
+                                    <InputCard aria-label="Número de calhas"
                                         type="number"
                                         onChange={(e) => setCalhas(e.target.value)}
                                     />
                                 </Item>
                                 <Item>
                                     <Title>Vazão de ar q (l/s/m²)</Title>
-                                    <InputCard
+                                    <InputCard aria-label="Vazão de ar (L/s·m²)"
                                         type="number"
                                         onChange={(e) => setVAr(e.target.value)}
                                     />
@@ -1003,35 +1003,35 @@ export default function Coagulacao() {
                             <Entradas>
                                 <Item>
                                     <Title>Altura</Title>
-                                    <InputCard
+                                    <InputCard aria-label="Camada suporte: altura (m)"
                                         type="number"
                                         onChange={(e) => setAlt(e.target.value)}
                                     />
                                 </Item>
                                 <Item>
                                     <Title>Porosidade</Title>
-                                    <InputCard
+                                    <InputCard aria-label="Camada suporte: porosidade"
                                         type="number"
                                         onChange={(e) => setPorosid(e.target.value)}
                                     />
                                 </Item>
                                 <Item>
                                     <Title>C. Esfericidade</Title>
-                                    <InputCard
+                                    <InputCard aria-label="Camada suporte: coeficiente de esfericidade"
                                         type="number"
                                         onChange={(e) => setEsfericidade(e.target.value)}
                                     />
                                 </Item>
                                 <Item>
                                     <Title>d<sub>10</sub> (mm)</Title>
-                                    <InputCard
+                                    <InputCard aria-label="Camada suporte: d10 (mm)"
                                         type="number"
                                         onChange={(e) => setD1(e.target.value)}
                                     />
                                 </Item>
                                 <Item>
                                     <Title>d<sub>60</sub> (mm)</Title>
-                                    <InputCard
+                                    <InputCard aria-label="Camada suporte: d60 (mm)"
                                         type="number"
                                         onChange={(e) => setD2(e.target.value)}
                                     />

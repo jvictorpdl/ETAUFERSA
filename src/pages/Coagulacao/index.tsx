@@ -702,7 +702,7 @@ const Coagulacao: React.FC<ResultsProps> = (props) => {
                 <Card>
                     <Parshall>
                         <Title>Selecione o Medidor Parshall</Title>
-                        <Selecione onChange={(e) => {
+                        <Selecione aria-label="Medidor Parshall" onChange={(e) => {
                             const opt = e.target.value;
                             setOptions(opt);
                             setAcepted(vazaoValida(Number(num), opt));
@@ -757,7 +757,7 @@ const Coagulacao: React.FC<ResultsProps> = (props) => {
                     </Section>
                     <Dimensionar>
                         <Checkbox>
-                            <input type="checkbox"
+                            <input aria-label="Mostrar modelo" type="checkbox"
                                 onChange={e => checked(e.target.checked)}
                             />
                             <p>Mostrar modelo</p>

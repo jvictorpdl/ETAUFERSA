@@ -840,7 +840,7 @@ const Result: React.FC<ResultsProps> = (props) => {
                             <Op>
                                 <Title>Fator de correção (%)
                                 </Title>
-                                <Input
+                                <Input aria-label="Fator de correção (%)"
                                     type="number"
                                     onChange={e => setFator(Number(e.target.value))}
                                 />
@@ -1089,7 +1089,7 @@ const Floculacao: React.FC<ResultsProps> = (props) => {
                             <Title>Q (m³/s)
                                 <span className="tooltiptext">Vazão</span>
                             </Title>
-                            <Input
+                            <Input aria-label="Vazão Q (m³/s)"
                                 type="number"
                                 onChange={e => setVazao(e.target.value)}
                             />
@@ -1098,7 +1098,7 @@ const Floculacao: React.FC<ResultsProps> = (props) => {
                             <Title>t (min)
                                 <span className="tooltiptext">Tempo mínimo</span>
                             </Title>
-                            <Input
+                            <Input aria-label="Tempo de floculação t (min)"
                                 type="number"
                                 onChange={e => setT(e.target.value)}
                             />
@@ -1107,7 +1107,7 @@ const Floculacao: React.FC<ResultsProps> = (props) => {
                             <Title>Nº de canais
                                 <span className="tooltiptext">Número de canais</span>
                             </Title>
-                            <Select name="" id="" onChange={(e) => {
+                            <Select aria-label="Número de câmaras" name="" id="" onChange={(e) => {
                                 const valor = e.target.value;
                                 setGs(valor);
                             }}>
@@ -1120,7 +1120,7 @@ const Floculacao: React.FC<ResultsProps> = (props) => {
                             <Title>Profundidade
                                 <span className="tooltiptext">Profundidade</span>
                             </Title>
-                            <Input
+                            <Input aria-label="Profundidade (m)"
                                 type="number"
                                 onChange={e => setProf(e.target.value)}
                             />
@@ -1129,7 +1129,7 @@ const Floculacao: React.FC<ResultsProps> = (props) => {
                             <Title>Nº de decantadores
                                 <span className="tooltiptext">Número de decantadores</span>
                             </Title>
-                            <Input
+                            <Input aria-label="Número de decantadores"
                                 type="number"
                                 onChange={e => setNd(e.target.value)}
                             />
@@ -1140,7 +1140,7 @@ const Floculacao: React.FC<ResultsProps> = (props) => {
                             <Title>Largura (m)
                                 <span className="tooltiptext">Largura em metros</span>
                             </Title>
-                            <Input
+                            <Input aria-label="Largura (m)"
                                 type="number"
                                 onChange={e => setL(e.target.value)}
                             />
@@ -1154,7 +1154,7 @@ const Floculacao: React.FC<ResultsProps> = (props) => {
                                         <Title>G{i + 1} (1/s)
                                             <span className="tooltiptext">Canal {i + 1}</span>
                                         </Title>
-                                        <Input
+                                        <Input aria-label={`G${i + 1} (1/s)`}
                                             type="number"
                                             value={gvalue}
                                             onChange={(e) => handleGchange(i, e.target.value)}
