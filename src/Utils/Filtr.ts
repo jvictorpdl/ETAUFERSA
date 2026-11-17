@@ -32,7 +32,7 @@ export default {
 
         var Gaar = (Math.pow((d90ar * Math.pow(10, -3)), 3) * 1000 * (roar - 1000) * 9.81) / Math.pow((1.01 * Math.pow(10, -3)), 2);
 
-        var Remfar = Math.sqrt(Math.pow(33.7, 2) + (0.048 * Gaar)) - 33.7;
+        var Remfar = Math.sqrt(Math.pow(33.7, 2) + (0.0408 * Gaar)) - 33.7;
 
         var Vmfar = (Remfar * Math.pow(10, -6)) / (d90ar * Math.pow(10, -3));
 
@@ -42,7 +42,7 @@ export default {
 
         var Gaant = (Math.pow((d90ant * Math.pow(10, -3)), 3) * 1000 * (roant - 1000) * 9.81) / Math.pow((1.01 * Math.pow(10, -3)), 2);
 
-        var Remfant = Math.sqrt(Math.pow(33.7, 2) + (0.048 * Gaant)) - 33.7;
+        var Remfant = Math.sqrt(Math.pow(33.7, 2) + (0.0408 * Gaant)) - 33.7;
 
         var Vmfant = (Remfant * Math.pow(10, -6)) / (d90ant * Math.pow(10, -3));
 
@@ -57,17 +57,11 @@ export default {
         var MT = Mar + Mant;
 
         var X2 = Mar / MT;
-        var vmf1;
-        var vmf2;
-        var VMF;
-        if (Vmfar > Vmfant) {
-            vmf1 = Vmfar;
-            vmf2 = Vmfant;
-            VMF = vmf1 * Math.pow(Math.pow((vmf2 / vmf1), X2), 1.69);
-        }
-        if (Vmfant > Vmfar) {
-            vmf1 = Vmfant;
-            vmf2 = Vmfar;
+        // Leito misto: vmf1 é a camada de maior Vmf; com Vmf iguais o leito tem esse mesmo Vmf
+        var VMF = Vmfar;
+        if (Vmfar !== Vmfant) {
+            var vmf1 = Math.max(Vmfar, Vmfant);
+            var vmf2 = Math.min(Vmfar, Vmfant);
             VMF = vmf1 * Math.pow(Math.pow((vmf2 / vmf1), X2), 1.69);
         }
 
