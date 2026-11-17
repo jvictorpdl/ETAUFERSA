@@ -56,13 +56,17 @@ const Filtr = {
 
         var MT = Mar + Mant;
 
-        var X2 = Mar / MT;
-        // Leito misto: vmf1 é a camada de maior Vmf; com Vmf iguais o leito tem esse mesmo Vmf
+        // Leito misto: Vmf = vmf1·(vmf2/vmf1)^(X2^1,69), com vmf1 a maior Vmf, vmf2 a menor e
+        // X2 a fração em massa da camada de menor Vmf (forma da correlação de Cheung et al.,
+        // 1974). Com uma camada só, o resultado é a Vmf dessa camada; com as duas, fica entre
+        // elas. O código antigo usava sempre a fração da areia e (vmf2/vmf1)^(1,69·X2), o que
+        // invertia os limites e podia dar valor menor que o das duas camadas.
         var VMF = Vmfar;
         if (Vmfar !== Vmfant) {
             var vmf1 = Math.max(Vmfar, Vmfant);
             var vmf2 = Math.min(Vmfar, Vmfant);
-            VMF = vmf1 * Math.pow(Math.pow((vmf2 / vmf1), X2), 1.69);
+            var X2 = (Vmfar < Vmfant ? Mar : Mant) / MT;
+            VMF = vmf1 * Math.pow(vmf2 / vmf1, Math.pow(X2, 1.69));
         }
 
 

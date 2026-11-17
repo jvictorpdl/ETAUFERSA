@@ -97,6 +97,29 @@ describe('Filtro de dupla camada (filtr)', () => {
     expect(vMf[2]).toBeGreaterThanOrEqual(Math.min(vMf[0], vMf[1]));
   });
 
+  test('só areia: Vmf do leito é a da areia', () => {
+    const [, vMf] = roda({ ...ent, lant: 1e-6 });
+    expect(vMf[2]).toBeCloseTo(vMf[0], 6);
+  });
+
+  test('só antracito: Vmf do leito é a do antracito', () => {
+    const [, vMf] = roda({ ...ent, lar: 1e-6 });
+    expect(vMf[2]).toBeCloseTo(vMf[1], 6);
+  });
+
+  test.each([[0.6, 0.3], [0.3, 0.5], [0.8, 0.2], [0.2, 0.8]])('areia %p m e antracito %p m: Vmf do leito entre as duas', (lar, lant) => {
+    const [, vMf] = roda({ ...ent, lar, lant });
+    expect(vMf[2]).toBeLessThanOrEqual(Math.max(vMf[0], vMf[1]) + 1e-12);
+    expect(vMf[2]).toBeGreaterThanOrEqual(Math.min(vMf[0], vMf[1]) - 1e-12);
+  });
+
+  test('mais areia aproxima a Vmf do leito da Vmf da areia', () => {
+    const pouca = roda({ ...ent, lar: 0.2, lant: 0.6 })[1][2];
+    const muita = roda({ ...ent, lar: 0.6, lant: 0.2 })[1][2];
+    const vAreia = roda(ent)[1][0];
+    expect(Math.abs(muita - vAreia)).toBeLessThan(Math.abs(pouca - vAreia));
+  });
+
   test('camadas com o mesmo Vmf: Vmf do leito misto é definido', () => {
     const [, vMf] = roda({ ...ent, d10ant: ent.d10ar, cuant: ent.cuar, roant: ent.roar });
     expect(vMf[2]).toBeCloseTo(vMf[0], 6);

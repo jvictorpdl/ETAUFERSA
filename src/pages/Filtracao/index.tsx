@@ -369,7 +369,7 @@ const Result: React.FC<ResultsProps> = (props) => {
         doc.text('Porosidade = ' + props.porosidade, 360, 161);
         doc.text('C. Esfericidade = ' + props.cEsfericidade, 360, 173);
         doc.text('d10 (mm) = ' + props.d10, 360, 186);
-        doc.text('d60 (mm) = ' + props.d102, 360, 199);
+        doc.text('d90 (mm) = ' + props.d102, 360, 199);
 
         doc.text('areia: ', 80, 260);
         doc.text('Altura (m) = ' + props.a1, 100, 273);
@@ -1030,8 +1030,8 @@ export default function Coagulacao() {
                                     />
                                 </Item>
                                 <Item>
-                                    <Title>d<sub>60</sub> (mm)</Title>
-                                    <InputCard aria-label="Camada suporte: d60 (mm)"
+                                    <Title>d<sub>90</sub> (mm)</Title>
+                                    <InputCard aria-label="Camada suporte: d90 (mm)"
                                         type="number"
                                         onChange={(e) => setD2(e.target.value)}
                                     />
