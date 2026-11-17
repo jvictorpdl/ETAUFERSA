@@ -303,8 +303,9 @@ const PDFButton = styled.button`
 `
 const Result: React.FC<ResultsProps> = (props) => {
     const [V1, V2, V3] = Dec.dec(props.q, props.vs, props.ns, props.prof);
-    // capacidade da ETA em m³/dia (vazão total, não por unidade)
-    const capacidade = Number(props.q) * 86400;
+    // critérios da NBR 12216 (item 5.10) para decantador convencional sem ensaios
+    const nbr = Dec.criterios(Number(props.q), Number(props.vs), Number(props.ns), V1[4]);
+    const capacidadeTexto = nbr.capacidade.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
     const jsPdfGenerator = () => {
         var doc = new jsPDF('p', 'pt');
         doc.setFont('courier');
@@ -354,15 +355,12 @@ const Result: React.FC<ResultsProps> = (props) => {
             doc.text('Re maior que 20000', 100, 516);
         }
 
-        doc.text(`Capacidade = ${capacidade.toFixed(0)} m³/dia; V0 = ${V1[4].toFixed(2)} cm/s`, 100, 539);
-        if (capacidade >= 10000) {
-            doc.text(V1[4] <= 0.75 ? '(V0 até 0,75 cm/s: condição atendida)' : '(V0 acima de 0,75 cm/s: condição não atendida)', 100, 552);
-        } else {
-            doc.text('(Abaixo de 10.000 m³/dia: conferir o limite de V0 na NBR 12216)', 100, 552);
-        }
+        doc.text(`NBR 12216 (capacidade ${capacidadeTexto} m³/dia):`, 100, 534);
+        doc.text(`Taxa ${nbr.taxa.valor} m³/m²dia, máx. ${nbr.taxa.maximo}: ${nbr.taxa.ok ? 'atendida' : 'não atendida'}`, 100, 547);
+        doc.text(`V0 ${nbr.v0.valor.toFixed(2)} cm/s, máx. ${nbr.v0.maximo}: ${nbr.v0.ok ? 'atendida' : 'não atendida'}`, 100, 560);
+        doc.text(`${nbr.unidades.valor} unidade(s), mín. ${nbr.unidades.minimo}: ${nbr.unidades.ok ? 'atendida' : 'não atendida'}`, 100, 573);
 
-        doc.text(`L/B = ${V3[1].toFixed(2)}`, 100, 585);
-        doc.text(V3[1] >= 3 && V3[1] <= 4 ? '(L/B entre 3 e 4: condição atendida)' : '(L/B fora de 3 a 4: condição não atendida)', 100, 598);
+        doc.text(`L/B = ${V3[1].toFixed(2)} ${V3[1] >= 3 && V3[1] <= 4 ? '(entre 3 e 4: atendida)' : '(fora de 3 a 4: não atendida)'}`, 100, 590);
         if (canvas.current != null) {
             doc.addPage();
             doc.text('Universidade Federal Rural do Semi-Árido - UFERSA', 80, 50);
@@ -523,31 +521,22 @@ const Result: React.FC<ResultsProps> = (props) => {
                                 </NAtendida>
                             }
                             {
-                                capacidade >= 10000 && V1[4] <= 0.75 &&
-                                <Atendida>
-                                    <p>
-                                        Capacidade de {capacidade.toFixed(0)} m³/dia (acima de 10.000): V0 = {V1[4].toFixed(2)} cm/s, até 0,75. <br />
-                                        (Condição atendida!)
-                                    </p>
-                                </Atendida>
-                            }
-                            {
-                                capacidade >= 10000 && V1[4] > 0.75 &&
-                                <NAtendida>
-                                    <p>
-                                        Capacidade de {capacidade.toFixed(0)} m³/dia (acima de 10.000): V0 = {V1[4].toFixed(2)} cm/s, acima de 0,75. <br />
-                                        (Condição não atendida!)
-                                    </p>
-                                </NAtendida>
-                            }
-                            {
-                                capacidade < 10000 &&
-                                <NAtendida>
-                                    <p>
-                                        Capacidade de {capacidade.toFixed(0)} m³/dia (abaixo de 10.000): V0 = {V1[4].toFixed(2)} cm/s. <br />
-                                        Confira o limite de V0 na NBR 12216 para esta capacidade.
-                                    </p>
-                                </NAtendida>
+                                [
+                                    {
+                                        ok: nbr.taxa.ok,
+                                        texto: `Taxa de aplicação ${nbr.taxa.valor} m³/m²·dia (máx. ${nbr.taxa.maximo} para ${capacidadeTexto} m³/dia)`,
+                                    },
+                                    {
+                                        ok: nbr.v0.ok,
+                                        texto: `V0 = ${nbr.v0.valor.toFixed(2).replace('.', ',')} cm/s (máx. ${nbr.v0.maximo.toFixed(2).replace('.', ',')} cm/s${nbr.capacidade > 10000 ? ', com bom controle operacional; 1,00 com remoção contínua de lodo' : ''})`,
+                                    },
+                                    {
+                                        ok: nbr.unidades.ok,
+                                        texto: `${nbr.unidades.valor} unidade(s) (mín. ${nbr.unidades.minimo} para ${capacidadeTexto} m³/dia)`,
+                                    },
+                                ].map((c) => c.ok
+                                    ? <Atendida key={c.texto}><p>{c.texto}<br />(NBR 12216: condição atendida)</p></Atendida>
+                                    : <NAtendida key={c.texto}><p>{c.texto}<br />(NBR 12216: condição não atendida!)</p></NAtendida>)
                             }
                             {
                                 V3[1] >= 3 && V3[1] <= 4 &&

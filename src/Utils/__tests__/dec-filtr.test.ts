@@ -22,8 +22,35 @@ describe('Decantador convencional (dec)', () => {
     expect(Lc).toBeCloseTo(0.2 * L, 6);
     expect(lvv).toBeCloseTo(2 * nn * Lc, 6);
     expect(Qll * lvv).toBeCloseTo(Qq * 1000, 6); // L/s
-    expect(Qll).toBeLessThanOrEqual(Math.min(0.018 * H * vs, 2.5) + 1e-9);
+    expect(Qll).toBeLessThanOrEqual(Math.min(0.018 * H * vs, 1.8) + 1e-9); // NBR 12216, 5.10.8
     expect(e * nn).toBeCloseTo(B, 6);
+  });
+});
+
+describe('Critérios da NBR 12216 para o decantador (criterios)', () => {
+  // [Q m³/s, vs, Ns, v0 cm/s] -> capacidade, taxa máx, V0 máx, unidades mín
+  test.each([
+    [0.01, 25, 1, 0.4, 25, 0.5, 1],    // 864 m³/dia
+    [0.1, 35, 1, 0.4, 35, 0.5, 1],     // 8.640 m³/dia
+    [0.3, 40, 2, 0.7, 40, 0.75, 2],    // 25.920 m³/dia
+  ])('Q=%p: limites por capacidade', (Q, vs, Ns, v0, taxaMax, v0Max, unMin) => {
+    const c = Dec.criterios(Q, vs, Ns, v0);
+    expect(c.capacidade).toBeCloseTo(Q * 86400, 6);
+    expect(c.taxa.maximo).toBe(taxaMax);
+    expect(c.v0.maximo).toBe(v0Max);
+    expect(c.unidades.minimo).toBe(unMin);
+    expect(c.taxa.ok && c.v0.ok && c.unidades.ok).toBe(true);
+  });
+
+  test('acima de 10.000 m³/dia com uma unidade só e V0 acima de 0,75: não atende', () => {
+    const c = Dec.criterios(0.3, 45, 1, 0.8);
+    expect(c.taxa.ok).toBe(false);
+    expect(c.v0.ok).toBe(false);
+    expect(c.unidades.ok).toBe(false);
+  });
+
+  test('até 10.000 m³/dia: V0 acima de 0,50 não atende', () => {
+    expect(Dec.criterios(0.1, 30, 1, 0.6).v0.ok).toBe(false);
   });
 });
 
