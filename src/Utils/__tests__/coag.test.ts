@@ -39,15 +39,13 @@ describe('Tabela Parshall (valoresParshal)', () => {
   // Oráculo independente: equações de descarga livre da ASTM D1941 / ISO 9826
   // (Q[ft³/s] = C·Ha[ft]^n; de 1 a 8 pés, C = 4W e n = 1,522·W^0,026)
   const astm = (Wft: number): [number, number] => {
+    if (Wft === 0.25) return [0.992, 1.547];
     if (Wft === 0.5) return [2.06, 1.58];
     if (Wft === 0.75) return [3.07, 1.53];
     return [4 * Wft, 1.522 * Math.pow(Wft, 0.026)];
   };
   const PES = [0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 6, 7, 8];
-  // Ficam de fora até conferir no Azevedo Netto: W7,6 cm (k = 3,704 contra 3,068 da ASTM)
-  // e W22,9 cm (n = 0,633 contra 0,654)
   PES.forEach((Wft, i) => {
-    if (i === 0 || i === 2) return;
     test(`opção ${i}: lâmina h0 bate com a equação ASTM (±3%)`, () => {
       const [C, n] = astm(Wft);
       const v = Coag.valoresParshal(i);
@@ -69,15 +67,18 @@ describe('Ressalto na calha Parshall (coag)', () => {
       test(`opção ${i}, Q=${qls.toFixed(1)} L/s: resultados finitos; positivos quando h3 > 0`, () => {
         const v = Coag.valoresParshal(i);
         const [V, H, O] = Coag.coag(Q, v);
-        [V[0], V[1], V[2], H[0], H[1], H[2]].forEach((x) => expect(x).toBeGreaterThan(0));
+        // sem solução (E0 menor que a energia crítica): a página mostra aviso
+        const semSolucao = !Number.isFinite(V[1]);
+        expect(semSolucao || [V[0], V[1], V[2], H[0], H[1], H[2]].every((x) => x > 0)).toBe(true);
         // h3 <= 0: a página mostra aviso de que h3, V3, T e G não valem
         const todosValidos = [...V, ...H, ...O].every((x) => Number.isFinite(x) && x > 0);
-        expect(H[3] <= 0 || todosValidos).toBe(true);
+        expect(semSolucao || H[3] <= 0 || todosValidos).toBe(true);
       });
 
       test(`opção ${i}, Q=${qls.toFixed(1)} L/s: energia conservada e h2 conjugada de h1`, () => {
         const v = Coag.valoresParshal(i);
         const [V, H, O] = Coag.coag(Q, v);
+        if (!Number.isFinite(V[1])) return; // sem solução: coberto pelo teste acima e pelo aviso
         const [, V1] = V;
         const [, h1, h2] = H;
         const E0 = O[2];
@@ -87,5 +88,20 @@ describe('Ressalto na calha Parshall (coag)', () => {
         expect(h2).toBeGreaterThan(h1);
       });
     });
+  });
+});
+
+describe('Calha W7,6 cm (3") perto da vazão máxima', () => {
+  const v = Coag.valoresParshal(0);
+  test('até 38 L/s o ressalto tem solução', () => {
+    const [V] = Coag.coag(0.038, v);
+    expect(Number.isFinite(V[1])).toBe(true);
+  });
+  test('em 53,8 L/s a energia disponível fica abaixo da crítica (sem solução)', () => {
+    const [V, , O] = Coag.coag(0.0538, v);
+    const q = O[1];
+    const Ec = 1.5 * Math.cbrt((q * q) / 9.81);
+    expect(O[2]).toBeLessThan(Ec);
+    expect(Number.isFinite(V[1])).toBe(false);
   });
 });

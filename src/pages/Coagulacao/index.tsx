@@ -522,6 +522,14 @@ const Result: React.FC<ResultsProps> = (props) => {
             </Canvas>
             <PDFButton onClick={() => download()}>Download</PDFButton>
             {
+                !Number.isFinite(V[1]) &&
+                <Aviso role="alert">
+                    Com esta vazão a energia disponível na calha (E0 = {O[2].toFixed(4)} m) é menor
+                    que a energia crítica na garganta, e o método do ressalto não tem solução.
+                    Escolha uma calha maior.
+                </Aviso>
+            }
+            {
                 H[3] <= 0 &&
                 <Aviso role="alert">
                     Com esta vazão a lâmina na saída da calha (h3 = {H[3].toFixed(4)} m) fica abaixo

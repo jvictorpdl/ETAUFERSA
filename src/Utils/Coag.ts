@@ -60,9 +60,13 @@ const Coag = {
             v[6] = 0;
             v[7] = 0;
         }
+        // k e n de h0 = k·Q^n (h0 em m, Q em m³/s) vêm da equação de descarga livre de
+        // Parshall (USBR, ASTM D1941, NBR ISO 9826). Livros brasileiros imprimem
+        // k = 3,704 para 3" e k = 1,486 / n = 0,633 para 9", valores que não batem com
+        // a equação original; as demais linhas da tabela batem com ela.
         if(n === 0){
             v[0] = 0.0760;
-            v[1] = 3.7040;
+            v[1] = 3.0680;
             v[2] = 0.6460;
             v[3] = 0.0570;
             v[4] = 0.2590;
@@ -82,8 +86,8 @@ const Coag = {
         }
         if(n === 2){
             v[0] = 0.2290;
-            v[1] = 1.4860;
-            v[2] = 0.6330;
+            v[1] = 1.5040;
+            v[2] = 0.6540;
             v[3] = 0.1140;
             v[4] = 0.5750;
             v[5] = 0.0760;
