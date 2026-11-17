@@ -1,161 +1,72 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import { Link } from 'react-router-dom';
-import { FiMenu } from 'react-icons/fi';
-import { RiCloseFill } from 'react-icons/ri';
-import MenuIcons from '../MenuIcons';
+import { NavLink } from 'react-router-dom';
 
-interface MenusProps {
-    open?: boolean;
-}
-const MenuContainer = styled.div`
-    margin: 0 1.6rem;
-    width: 90%;
+// Quatro links: cabem na barra em qualquer largura, sem menu escondido no celular
+const Nav = styled.nav`
+    width: 100%;
     display: flex;
+    justify-content: center;
+`
 
-    & ${MenuIcons}{
-        position: fixed;
-        right: 16px;
-        top: 16px;
-    }
-    @media(min-width: 768px){
-        align-items: center;
-        justify-content: center;
-    }
-    @media(min-width: 1000px){
-    }
-`
-const Menus = styled.nav`
-    z-index: 1;
-    width: 170px;
-    height: 100vh;
-    position: fixed;
-    right: 0;
-    top: 0;
-    transform: ${(props: MenusProps) => props.open ? 'translateX(100%)' : 'translateX(0)'};
-    transition: 0.3s;
-    padding-top: 20px;
-    
-    ul{
-        margin-left: 0;
-        width: 100%;
-        padding: 0;
-    }
-    ul li{
-        max-width: 125px;
-    }
-    ul ul{
-        display: none;
-    }
-    ul li:hover > ul{
-        display: block;
-    }
-    @media(min-width: 768px){
-        max-width: 560px;
-        transform: none;
-        display: flex;
-        position: static;
-        height: 100%;
-        flex: 1;
-        background-color: transparent;
-        justify-content: space-between;  
-    }
-    @media(min-width: 1000px){
-        min-width: 650px;
-    }
-`
-const Lista = styled.li`
-    color: white;
-    display: flex;
-    max-width: 190px;
-    height: 70px;
-    padding: 0;
-    display: inline-block;
-    text-align: initial;
-    line-height: 70px;
-    font-size: 16px;
-    ul li:hover{
-        transition: 0.3s;
-    }
-    @media(max-width: 1000px){
-        max-width: 100px;
-    }
-`
-const MenuList = styled.ul`
+const Lista = styled.ul`
     list-style: none;
-    margin-left: 2rem;
-    margin-top: 1rem;
-    padding: 0;
-    height: 100%;
     display: flex;
-    align-items: center;
-    flex-direction: column;
-    li ul li{
-        background-color: var(--SubMenuFundo);
-    }
-    li 
-    .MenuLink{
-        color: var(--branco);
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 0;
-    }
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 8px;
+    width: 100%;
+    max-width: 650px;
+    padding: 0 16px;
     @media(min-width: 768px){
-        display: flex;
         justify-content: space-between;
-        margin: 0;
-        li{
-            margin-right: 5px;
-            margin-bottom: 0;
-            color: var(--branco);
-        }
-    }
-    @media(min-width: 768px){
-        flex-direction: row;
-    }
-    @media(min-width: 1000px){
-        margin: 0;
-        max-width: 630px;
-        li {
-            margin-bottom: 0;
-            font-size: 18px;
-        }
-        .MenuLink{
-            color: var(--color-botao-texto);
-        }
     }
 `
+
+const Link = styled(NavLink)`
+    display: block;
+    padding: 10px 12px;
+    color: var(--branco);
+    text-decoration: none;
+    font-size: 16px;
+    border-radius: 6px;
+    &:hover,
+    &:focus-visible {
+        background-color: rgba(255, 255, 255, 0.15);
+    }
+    &.ativo {
+        background-color: rgba(255, 255, 255, 0.22);
+        font-weight: 500;
+    }
+    @media(min-width: 1000px){
+        font-size: 18px;
+    }
+`
+
+const PAGINAS = [
+    { para: '/coagulacao', nome: 'Coagulação' },
+    { para: '/floculacao', nome: 'Floculação' },
+    { para: '/decantacao', nome: 'Decantação' },
+    { para: '/filtracao', nome: 'Filtração' },
+];
+
 export default function Menu() {
-
-    const [open, setOpen] = useState(true);
-
     return (
-        <MenuContainer>
-            {open &&
-                <MenuIcons open={open} onClick={() => setOpen(!open)}>
-                    <FiMenu />
-                </MenuIcons>
-            }
-            {!open &&
-                <MenuIcons open={open} onClick={() => setOpen(!open)}>
-                    <RiCloseFill />
-                </MenuIcons>
-            }
-            <Menus open={open}>
-                <MenuList>
-                    <Lista><Link to="/coagulacao" className="MenuLink" >Coagulação</Link></Lista>
-                    <Lista><Link to="/floculacao" className="MenuLink" >Floculação</Link></Lista>
-                    <Lista><Link to="/decantacao" className="MenuLink" >Decantação</Link></Lista>
-                    <Lista><Link to="/filtracao" className="MenuLink" >Filtração</Link></Lista>
-
-                </MenuList>
-
-            </Menus>
-            
-
-        </MenuContainer>
+        <Nav aria-label="Unidades da ETA">
+            <Lista>
+                {PAGINAS.map((p) => (
+                    <li key={p.para}>
+                        <Link
+                            to={p.para}
+                            className="MenuLink"
+                            activeClassName="ativo"
+                            isActive={(_, local) => local.pathname === p.para || (p.para === '/coagulacao' && local.pathname === '/')}
+                        >
+                            {p.nome}
+                        </Link>
+                    </li>
+                ))}
+            </Lista>
+        </Nav>
     );
 }

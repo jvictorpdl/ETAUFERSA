@@ -120,6 +120,10 @@ const TableHead = styled.th`
 `
 const Table = styled.table`
     width: 100%;
+    @media(max-width: 600px){
+        display: block;
+        overflow-x: auto;
+    }
     margin-top: 20px;
     border-collapse: collapse;
     text-align: center;
@@ -208,6 +212,8 @@ const BottomCard = styled.div`
 const Entradas = styled.div`
     width: 100%;
     display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     align-items: center;
     justify-content: space-around;
 `
@@ -356,14 +362,14 @@ const Result: React.FC<ResultsProps> = (props) => {
         doc.text('Número de decantadores = ' + props.ndecantadores, 100, 173);
         doc.text('Largura do decantador (m) = ' + props.ldecantador, 100, 186);
         doc.text('Largura da calha de lavagem (m) = ' + props.lCalhaLavagem, 100, 199);
-        doc.text('Número de calhas = ' + props.lCalhaLavagem, 100, 211);
+        doc.text('Número de calhas = ' + props.nCalhas, 100, 211);
         doc.text('Vazão de ar q (l/s/m²) = ' + props.vazaoAr, 100, 224);
-        doc.text('Taxa de Filtração (m³/m²dia) = ' + props.taxaFiltracao, 100, 237);
-        doc.text('Altura = ' + props.ndecantadores, 360, 148);
-        doc.text('Porosidade = ' + props.ldecantador, 360, 161);
-        doc.text('C. Esfericidade = ' + props.lCalhaLavagem, 360, 173);
-        doc.text('d10 (mm) = ' + props.lCalhaLavagem, 360, 186);
-        doc.text('d60 (mm) = ' + props.lCalhaLavagem, 360, 199);
+        doc.text('Camada suporte: ', 340, 128);
+        doc.text('Altura (m) = ' + props.altura, 360, 148);
+        doc.text('Porosidade = ' + props.porosidade, 360, 161);
+        doc.text('C. Esfericidade = ' + props.cEsfericidade, 360, 173);
+        doc.text('d10 (mm) = ' + props.d10, 360, 186);
+        doc.text('d60 (mm) = ' + props.d102, 360, 199);
 
         doc.text('areia: ', 80, 260);
         doc.text('Altura (m) = ' + props.a1, 100, 273);
@@ -385,7 +391,7 @@ const Result: React.FC<ResultsProps> = (props) => {
 
         doc.text('Relatório analítico da unidade de Filtração', 80, 371);
 
-        doc.text('Velocidades Obtidas (m/s)', 80, 391);
+        doc.text('Dimensões dos filtros', 80, 391);
 
         doc.text(`Área total de filtração (m²) = ${V4[0]}`, 100, 406);
         doc.text(`Número de filtros = ${V4[1]}`, 100, 419);
@@ -404,8 +410,8 @@ const Result: React.FC<ResultsProps> = (props) => {
 
         doc.text('Calhas de água de lavagem', 80, 588);
 
-        doc.text(`Dimenssões de calha B (m) = ${V2[0]?.toFixed(4)}`, 100, 603);
-        doc.text(`Dimenssões de calha h (m) = ${V2[1]?.toFixed(4)}`, 100, 616);
+        doc.text(`Dimensões de calha B (m) = ${V2[0]?.toFixed(4)}`, 100, 603);
+        doc.text(`Dimensões de calha h (m) = ${V2[1]?.toFixed(4)}`, 100, 616);
         doc.text(`Consideração = ${V2[2]} - H0 - ${V2[3]}`, 100, 629);
         doc.text(`Consideração = ${V2[4]?.toFixed(4)} - S - ${V2[5]}`, 100, 642);
         doc.text(`S entre calhas (m) = ${V2[6]?.toFixed(4)}`, 100, 655);
@@ -417,7 +423,7 @@ const Result: React.FC<ResultsProps> = (props) => {
         doc.text(`Total = ${hf[2]?.toFixed(4)}`, 100, 721);
         doc.text(`Camada Suporte = ${hf[3]?.toFixed(4)}`, 100, 734);
 
-        doc.text('Velocidade mpinima de fluidificação (m/s)', 80, 756);
+        doc.text('Velocidade mínima de fluidificação (m/s)', 80, 756);
 
         doc.text(`Areia = ${vMf[0]?.toFixed(4)}`, 100, 771);
         doc.text(`Antracito = ${vMf[1]?.toFixed(4)}`, 100, 784);
@@ -551,7 +557,7 @@ const Result: React.FC<ResultsProps> = (props) => {
                         <TitleCard>Calhas de água de lavagem</TitleCard>
                         <Grid>
                             <Item>
-                                <Name>Dimenssões de calha B e h (m)</Name>
+                                <Name>Dimensões de calha B e h (m)</Name>
                                 <Value>{V2[0]?.toFixed(4)}</Value><br />
                                 <Value>{V2[1]?.toFixed(4)}</Value>
                             </Item>
@@ -577,7 +583,7 @@ const Result: React.FC<ResultsProps> = (props) => {
                         <TitleCard>Vertedor de saída</TitleCard>
                         <Grid>
                             <Item>
-                                <Name>Dimenssões de vertedor B e h (m)</Name>
+                                <Name>Dimensões de vertedor B e h (m)</Name>
                                 <Value>{V3[0]}</Value><br />
                                 <Value>{V3[1]?.toFixed(4)}</Value>
                             </Item>
@@ -616,7 +622,7 @@ const Result: React.FC<ResultsProps> = (props) => {
                         </Grid>
                     </CardResultados>
                     <CardResultados>
-                        <TitleCard>Velocidade mpinima de fluidificação (m/s)</TitleCard>
+                        <TitleCard>Velocidade mínima de fluidificação (m/s)</TitleCard>
                         <Grid>
                             <Item>
                                 <Name>Areia</Name>

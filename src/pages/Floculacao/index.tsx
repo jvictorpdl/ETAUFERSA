@@ -491,11 +491,13 @@ const Result: React.FC<ResultsProps> = (props) => {
 
     var secondTable = 0;
     var [V11, V12, V13, V14, V15, V16, V17, V18] = Floc.m11(M11);
-    var firstTable = V18[0];
+    // maior G entre as câmaras, antes e depois da correção
+    var firstTable = Math.max(...V18);
+    var camarasAcima = V18.map((g: number, i: number) => (g > 70 ? i + 1 : 0)).filter(Boolean).join(', ');
 
     if (M22 !== undefined) {
         var [V21, V22, V23, V24, V25, V26, V27, V28] = Floc.m22(M22);
-        secondTable = V28[0];
+        secondTable = Math.max(...V28);
         teste = 1;
     }
 
@@ -504,13 +506,8 @@ const Result: React.FC<ResultsProps> = (props) => {
             setFatorvalueCalculated(fatorvalue);
             setCalculated(fatorvalue);
             setIsDimensione(true);
-            if (secondTable === 0)
-                setSecondTableCalculated(V28[0]);
-            else
-                setSecondTableCalculated(secondTable);
-
-            if (V28[0] <= 70)
-                setFatorAcept(true)
+            setSecondTableCalculated(secondTable);
+            setFatorAcept(secondTable <= 70);
         } else {
             alert("Digite um valor positivo para o Fator de correção!");
         }
@@ -836,7 +833,7 @@ const Result: React.FC<ResultsProps> = (props) => {
                     firstTable > 70 &&
                     <CardFator>
                         <NotiFator>
-                            <h2>O valor do canal 1 é maior que 70 1/s!</h2>
+                            <h2>G maior que 70 1/s na(s) câmara(s) {camarasAcima}!</h2>
                             <p>Digite um fator de correção para corrigir.</p>
                         </NotiFator>
                         <InputFator>
@@ -862,13 +859,13 @@ const Result: React.FC<ResultsProps> = (props) => {
                         {
                             secondTable <= 70 &&
                             <NotiFatorOk>
-                                <h2>O valor do canal 1 foi corrigido com um fator de correção de {fatorvalue}%!</h2>
+                                <h2>Câmara(s) {camarasAcima} corrigida(s) com um fator de correção de {fatorvalue}%!</h2>
                             </NotiFatorOk>
                         }
                         {
                             secondTableCalculated > 70 &&
                             <NotiFator>
-                                <h2>O valor do canal 1 continua maior que 70 1/s!</h2>
+                                <h2>O G continua maior que 70 1/s!</h2>
                                 <p>Insira novamente um fator de correção.</p>
                             </NotiFator>
                         }
@@ -937,7 +934,7 @@ const Result: React.FC<ResultsProps> = (props) => {
                     </CardResultados>
                 }
                 {
-                    (secondTableCalculated <= 70 && V18[0] <= 70) &&
+                    (secondTableCalculated <= 70 && firstTable <= 70) &&
                     <PDFButton onClick={jsPdfGenerator}>Gerar PDF</PDFButton>
                 }
                 {

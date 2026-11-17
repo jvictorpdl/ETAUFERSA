@@ -13,6 +13,18 @@ interface ResultsProps {
     vet: number[],
     options: number
 }
+
+// Faixa de vazão de cada calha Parshall (m³/s), na ordem do <select>
+const FAIXAS_Q: Array<[number, number]> = [
+    [0.0008, 0.0538], [0.0014, 0.1104], [0.0025, 0.252], [0.0031, 0.4559],
+    [0.0042, 0.6966], [0.0119, 0.937], [0.0173, 1.4272], [0.0368, 1.9227],
+    [0.0453, 2.4239], [0.0736, 2.9308], [0.085, 3.4377], [0.0991, 3.9502],
+];
+function vazaoValida(q: number, opcao: string) {
+    const faixa = FAIXAS_Q[Number(opcao)];
+    return faixa !== undefined && q >= faixa[0] && q <= faixa[1];
+}
+
 const EtaContainer = styled.div`
     display: flex;
     align-items: center;
@@ -111,22 +123,12 @@ const TableHeadContainer = styled.thead`
     }
 
 `
-const Input = styled.input`
+const Input = styled.input<{ $erro?: boolean }>`
     margin-top: 10px;
     width: 80px;
     padding: 5px;
     font-size: 1.4rem;
-    border: 1px solid var(--gray-dark);  
-    border-radius: 8px;
-    outline: none;
-    text-align: center;
-`
-const InputErr = styled.input`
-    margin-top: 10px;
-    width: 80px;
-    padding: 5px;
-    font-size: 1.4rem;
-    border: 1px solid red;  
+    border: 1px solid ${(p) => (p.$erro ? 'red' : 'var(--gray-dark)')};
     border-radius: 8px;
     outline: none;
     text-align: center;
@@ -435,7 +437,7 @@ const Result: React.FC<ResultsProps> = (props) => {
         doc.text('Tempo de mistura (s)', 80, 520);
         doc.text(`T = ${O[5].toFixed(4)}`, 100, 533);
         doc.text('Gradiente de velocidade (s-1)', 80, 546);
-        doc.text(`G = ${O[5].toFixed(4)}`, 100, 569);
+        doc.text(`G = ${O[6].toFixed(4)}`, 100, 569);
 
 
         
@@ -680,108 +682,8 @@ const Coagulacao: React.FC<ResultsProps> = (props) => {
 
     function setVazao(n: string) {
         setNum(n);
-        var valor = Number(n);
-        if (options === "0") {
-            if (valor >= 0.0008 && valor <= 0.0538) {
-                setAcepted(true);
-            } else {
-                setAcepted(false);
-            }
-        } else {
-            if (options === "1") {
-                if (valor >= 0.0014 && valor <= 0.1104) {
-                    setAcepted(true);
-                } else {
-                    setAcepted(false);
-                }
-            } else {
-                if (options === "2") {
-                    if (valor >= 0.0025 && valor <= 0.252) {
-                        setAcepted(true);
-                    } else {
-                        setAcepted(false);
-                    }
-                } else {
-                    if (options === "3") {
-                        if (valor >= 0.0031 && valor <= 0.4559) {
-                            setAcepted(true);
-                        } else {
-                            setAcepted(false);
-                        }
-                    } else {
-                        if (options === "4") {
-                            if (valor >= 0.0042 && valor <= 0.6966) {
-                                setAcepted(true);
-                            } else {
-                                setAcepted(false);
-                            }
-                        } else {
-                            if (options === "5") {
-                                if (valor >= 0.0119 && valor <= 0.937) {
-                                    setAcepted(true);
-                                } else {
-                                    setAcepted(false);
-                                }
-                            } else {
-                                if (options === "6") {
-                                    if (valor >= 0.0173 && valor <= 1.4272) {
-                                        setAcepted(true);
-                                    } else {
-                                        setAcepted(false);
-                                    }
-                                } else {
-                                    if (options === "7") {
-                                        if (valor >= 0.0368 && valor <= 1.9227) {
-                                            setAcepted(true);
-                                        } else {
-                                            setAcepted(false);
-                                        }
-                                    } else {
-                                        if (options === "8") {
-                                            if (valor >= 0.0453 && valor <= 2.4239) {
-                                                setAcepted(true);
-                                            } else {
-                                                setAcepted(false);
-                                            }
-                                        } else {
-                                            if (options === "9") {
-                                                if (valor >= 0.0736 && valor <= 2.9308) {
-                                                    setAcepted(true);
-                                                } else {
-                                                    setAcepted(false);
-                                                }
-                                            } else {
-                                                if (options === "10") {
-                                                    if (valor >= 0.085 && valor <= 3.4377) {
-                                                        setAcepted(true);
-                                                    } else {
-                                                        setAcepted(false);
-                                                    }
-                                                } else {
-                                                    if (options === "11") {
-                                                        if (valor >= 0.0991 && valor <= 3.9502) {
-                                                            setAcepted(true);
-                                                        } else {
-                                                            setAcepted(false);
-                                                        }
-                                                    } else {
-                                                        setAcepted(false);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if (acepted === true) {
-            setIsDimensione(false);
-        }
-
+        setAcepted(vazaoValida(Number(n), options));
+        setIsDimensione(false);
     }
     function checked(n: boolean) {
         if (n === true) {
@@ -803,20 +705,22 @@ const Coagulacao: React.FC<ResultsProps> = (props) => {
                         <Selecione onChange={(e) => {
                             const opt = e.target.value;
                             setOptions(opt);
+                            setAcepted(vazaoValida(Number(num), opt));
+                            setIsDimensione(false);
                         }}>
                             <option value="-1"></option>
-                            <option value="0">W7,6 (cm) / Q: 0,8 - 53,8</option>
-                            <option value="1">W15,2 (cm) / Q: 1,4 - 110,4</option>
-                            <option value="2">W22,9 (cm) / Q: 2,5 - 252,0</option>
-                            <option value="3">W30,5 (cm) / Q: 3,1 - 455,9</option>
-                            <option value="4">W45,7 (cm) / Q: 4,2 - 696,6</option>
-                            <option value="5">W61,0 (cm) / Q: 11,9 - 937,0</option>
-                            <option value="6">W91,5 (cm) / Q: 17,3 - 1427,2</option>
-                            <option value="7">W122,0 (cm) / Q: 36,8 - 1922,7</option>
-                            <option value="8">W152,5 (cm) / Q: 45,3 - 2423,9</option>
-                            <option value="9">W183,0 (cm) / Q: 73,6 - 2930,8</option>
-                            <option value="10">W213,5 (cm) / Q: 85,0 - 3437,7</option>
-                            <option value="11">W244,0 (cm) / Q: 99,1 - 3950,2</option>
+                            <option value="0">W7,6 (cm) / Q: 0,8 - 53,8 L/s</option>
+                            <option value="1">W15,2 (cm) / Q: 1,4 - 110,4 L/s</option>
+                            <option value="2">W22,9 (cm) / Q: 2,5 - 252,0 L/s</option>
+                            <option value="3">W30,5 (cm) / Q: 3,1 - 455,9 L/s</option>
+                            <option value="4">W45,7 (cm) / Q: 4,2 - 696,6 L/s</option>
+                            <option value="5">W61,0 (cm) / Q: 11,9 - 937,0 L/s</option>
+                            <option value="6">W91,5 (cm) / Q: 17,3 - 1427,2 L/s</option>
+                            <option value="7">W122,0 (cm) / Q: 36,8 - 1922,7 L/s</option>
+                            <option value="8">W152,5 (cm) / Q: 45,3 - 2423,9 L/s</option>
+                            <option value="9">W183,0 (cm) / Q: 73,6 - 2930,8 L/s</option>
+                            <option value="10">W213,5 (cm) / Q: 85,0 - 3437,7 L/s</option>
+                            <option value="11">W244,0 (cm) / Q: 99,1 - 3950,2 L/s</option>
                         </Selecione>
                     </Parshall>
                     <Section>
@@ -824,23 +728,15 @@ const Coagulacao: React.FC<ResultsProps> = (props) => {
                             <Name>Q (m³/s)
                                 <span className="tooltiptext">Vazão no canal de coagulação (m³/s)</span>
                             </Name>
-                            {
-                                acepted === true &&
-                                <Input
-                                    type="number"
-                                    value={num}
-                                    onChange={e => setVazao(e.target.value)}
-                                />
-                            }
-
-                            {
-                                acepted === false &&
-                                <InputErr
-                                    type="number"
-                                    value={num}
-                                    onChange={e => setVazao(e.target.value)}
-                                />
-                            }
+                            <Input
+                                type="number"
+                                step="any"
+                                aria-label="Vazão em m³/s"
+                                aria-invalid={num !== "" && !acepted}
+                                $erro={num !== "" && !acepted}
+                                value={num}
+                                onChange={e => setVazao(e.target.value)}
+                            />
                         </Entrada>
                         <Table>
                             <TableHeadContainer>

@@ -32,6 +32,10 @@
     box-sizing: border-box;
 }
 
+html, body {
+    overflow-x: hidden;
+}
+
 html, body, #root {
     height: 100vh;
     background-color: var(--fundo);
@@ -40,4 +44,23 @@ html, body, #root {
 
 body {
     background-color: var(--body);
+}
+
+/* Celular: nada da página passa da largura da tela */
+main {
+    max-width: 100%;
+    min-width: 0;
+}
+
+main div,
+main section,
+main table,
+main canvas,
+main img {
+    max-width: 100%;
+}
+
+main canvas,
+main img {
+    height: auto;
 }

@@ -303,6 +303,8 @@ const PDFButton = styled.button`
 `
 const Result: React.FC<ResultsProps> = (props) => {
     const [V1, V2, V3] = Dec.dec(props.q, props.vs, props.ns, props.prof);
+    // capacidade da ETA em m³/dia (vazão total, não por unidade)
+    const capacidade = Number(props.q) * 86400;
     const jsPdfGenerator = () => {
         var doc = new jsPDF('p', 'pt');
         doc.setFont('courier');
@@ -327,11 +329,11 @@ const Result: React.FC<ResultsProps> = (props) => {
         doc.text(`Largura do decantador (m) = ${V1[2].toFixed(0)}`, 100, 234);
         doc.text(`Comprimento do decantador (m) = ${V1[3].toFixed(4)}`, 100, 247);
         doc.text(`Velocidade horizontal (cm/s) = ${V1[4].toFixed(4)}`, 100, 260);
-        doc.text(`Vazão que passa pela unidade (m³/s) = ${V2[0].toFixed(4)}`, 100, 273);
+        doc.text(`Vazão por metro de vertedor (L/s·m) = ${V2[0].toFixed(4)}`, 100, 273);
         doc.text(`Comprimento do total do vertedor (m) = ${V2[1].toFixed(4)}`, 100, 286);
         doc.text(`Comprimento das calhas (m) = ${V2[2].toFixed(4)}`, 100, 299);
         doc.text(`Número de calhas = ${V2[3].toFixed(0)}`, 100, 311);
-        doc.text(`Espaçamento entre calhas (m) = ${V2[3].toFixed(4)}`, 100, 323);
+        doc.text(`Espaçamento entre calhas (m) = ${V2[4].toFixed(4)}`, 100, 323);
 
         doc.line(485, 350, 80, 350);
 
@@ -348,15 +350,19 @@ const Result: React.FC<ResultsProps> = (props) => {
             doc.text('Condição satisfeita:', 100, 503);
             doc.text('Re menor que 20000', 100, 516);
         } else {
-            doc.text('Condição Não satisfeita:', 100, 503);
+            doc.text('Condição não satisfeita:', 100, 503);
             doc.text('Re maior que 20000', 100, 516);
         }
 
-        doc.text('Sistema com capacidade acima de 10.000 m³/dia - v0 = 0,75', 100, 539);
-        doc.text('(Condição atendida)', 100, 552);
+        doc.text(`Capacidade = ${capacidade.toFixed(0)} m³/dia; V0 = ${V1[4].toFixed(2)} cm/s`, 100, 539);
+        if (capacidade >= 10000) {
+            doc.text(V1[4] <= 0.75 ? '(V0 até 0,75 cm/s: condição atendida)' : '(V0 acima de 0,75 cm/s: condição não atendida)', 100, 552);
+        } else {
+            doc.text('(Abaixo de 10.000 m³/dia: conferir o limite de V0 na NBR 12216)', 100, 552);
+        }
 
-        doc.text('L/B = 3 ou 4', 100, 585);
-        doc.text('(Condição atendida)', 100, 598);
+        doc.text(`L/B = ${V3[1].toFixed(2)}`, 100, 585);
+        doc.text(V3[1] >= 3 && V3[1] <= 4 ? '(L/B entre 3 e 4: condição atendida)' : '(L/B fora de 3 a 4: condição não atendida)', 100, 598);
         if (canvas.current != null) {
             doc.addPage();
             doc.text('Universidade Federal Rural do Semi-Árido - UFERSA', 80, 50);
@@ -464,7 +470,7 @@ const Result: React.FC<ResultsProps> = (props) => {
                                 <Value>{V1[4].toFixed(4)}</Value>
                             </Item>
                             <Item>
-                                <Name>Ql (m³/s)
+                                <Name>Ql (L/s·m)
                                     <span className="tooltiptext">Vazão que passa pela unidade</span>
                                 </Name>
                                 <Value>{V2[0].toFixed(4)}</Value>
@@ -511,26 +517,35 @@ const Result: React.FC<ResultsProps> = (props) => {
                                 V3[0] >= 20000 &&
                                 <NAtendida>
                                     <p>
-                                        Condição satisfeita:<br />
+                                        Condição não satisfeita:<br />
                                         Re maior ou igual a 20000
                                     </p>
                                 </NAtendida>
                             }
                             {
-                                V3[0] >= 10000 &&
+                                capacidade >= 10000 && V1[4] <= 0.75 &&
                                 <Atendida>
                                     <p>
-                                        Sistema com capacidade acima de 10.000 m³/dia - V0 = 0,75. <br />
+                                        Capacidade de {capacidade.toFixed(0)} m³/dia (acima de 10.000): V0 = {V1[4].toFixed(2)} cm/s, até 0,75. <br />
                                         (Condição atendida!)
                                     </p>
                                 </Atendida>
                             }
                             {
-                                V3[0] < 10000 &&
+                                capacidade >= 10000 && V1[4] > 0.75 &&
                                 <NAtendida>
                                     <p>
-                                        Sistema com capacidade abaixo de 10.000 m³/dia - V0 = 0,75. <br />
+                                        Capacidade de {capacidade.toFixed(0)} m³/dia (acima de 10.000): V0 = {V1[4].toFixed(2)} cm/s, acima de 0,75. <br />
                                         (Condição não atendida!)
+                                    </p>
+                                </NAtendida>
+                            }
+                            {
+                                capacidade < 10000 &&
+                                <NAtendida>
+                                    <p>
+                                        Capacidade de {capacidade.toFixed(0)} m³/dia (abaixo de 10.000): V0 = {V1[4].toFixed(2)} cm/s. <br />
+                                        Confira o limite de V0 na NBR 12216 para esta capacidade.
                                     </p>
                                 </NAtendida>
                             }
