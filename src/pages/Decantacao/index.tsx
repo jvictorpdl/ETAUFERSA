@@ -1,711 +1,193 @@
-import React, { useState, useRef, useEffect } from 'react';
-import styled from 'styled-components';
-import PageTemplate from '../PageTemplate';
+import React, { useRef, useState } from 'react';
 import Dec from '../../Utils/Dec';
-import jsPDF from 'jspdf';
-import Img3 from '../../assets/images/dec3.png';
-import Img4 from '../../assets/images/dec4.png';
-import Img5 from '../../assets/images/dec5.png';
-const ETA2Container = styled.div`
-    width: 100%;
-    padding-top: 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-`
-const Card = styled.div`
-    width: 100%;
-    background-color: var(--branco);
-    border-radius: 8px;
-    padding: 10px;
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    justify-content: center;
+import Layout from '../../components/ui/Layout';
+import Calculadora from '../../components/ui/Calculadora';
+import { Campo } from '../../components/ui/Campo';
+import { ItemAjuda, PainelAjuda } from '../../components/ui/Ajuda';
+import Desenho, { baixarPng } from '../../components/ui/Desenho';
+import Verificacoes, { Verificacao } from '../../components/ui/Verificacoes';
+import useDados from '../../components/ui/useDados';
+import { lerNumero, numero } from '../../components/ui/formato';
+import {
+    ActionButton, BarraAcoes, Bloco, Botoes, BotaoSecundario, CaixaTabela, CancelButton, Column, Conclusao,
+    Descricao, Destaque, Destaques, FormTitle, Grid, MensagemErro, Paragrafo, Row, Secao, Tabela, TituloBloco, Unidade, VerticalSplitter,
+} from '../../components/ui/estilos';
+import img3 from '../../assets/images/dec3.png';
+import img4 from '../../assets/images/dec4.png';
+import img5 from '../../assets/images/dec5.png';
+import { relatorioDecantacao } from './relatorio';
 
-`
-const Entradas = styled.div`
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    @media(min-width: 768px){
-        min-width: 600px;
-        margin-top: 20px;
-    }
-    @media(min-width: 1000px){
-        min-width: 800px;
-    }
-`
-const Op = styled.div`
-    margin-right: 5px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items:center;
-    justify-content: center;
-    @media(min-width: 1000px){
-    }
-`
-const Title = styled.h3`
-    max-width: 120px;
-    font-size: 0.8rem;
-    color: var(--gray-dark);
-    margin-bottom: 10px;
-    text-align: center;
-    position: relative;
-    display: inline-block;
+const GRUPOS = ['Dados do decantador', 'Resultados'];
 
-    .tooltiptext {
-        visibility: hidden;
-        width: 120px;
-        background-color: #555;
-        color: #fff;
-        text-align: center;
-        border-radius: 6px;
-        padding: 5px 0;
-        position: absolute;
-        z-index: 1;
-        bottom: 125%;
-        left: 50%;
-        margin-left: -60px;
-        opacity: 0;
-        transition: opacity 0.3s;
+const CAMPOS = [
+    { nome: 'q', rotulo: 'Q', unidade: 'm³/s', dica: 'Vazão total da ETA.', inteiro: false },
+    { nome: 'vs', rotulo: 'vs', unidade: 'm³/m²·dia', dica: 'Taxa de aplicação superficial (velocidade de sedimentação). Sem ensaios, a NBR 12216 limita a 25, 35 ou 40 m³/m²·dia conforme a capacidade.', inteiro: false },
+    { nome: 'ns', rotulo: 'Nº de unidades', unidade: '', dica: 'Número de decantadores iguais em paralelo. Acima de 10.000 m³/dia, a NBR 12216 pede pelo menos dois.', inteiro: true },
+    { nome: 'prof', rotulo: 'H', unidade: 'm', dica: 'Profundidade útil do decantador.', inteiro: false },
+] as const;
+
+type Entrada = { q: number; vs: number; ns: number; prof: number };
+
+export default function Decantacao() {
+    const { dados, alterar, limpar, temDados } = useDados('decantacao', { q: '', vs: '', ns: '', prof: '' });
+    const [grupo, setGrupo] = useState(GRUPOS[0]);
+    const [calculo, setCalculo] = useState<Entrada | null>(null);
+    const [invalidos, setInvalidos] = useState<string[]>([]);
+    const desenho = useRef<HTMLCanvasElement>(null);
+
+    function dimensionar() {
+        const valores: Record<string, number> = {};
+        const ruins: string[] = [];
+        CAMPOS.forEach((c) => {
+            const x = lerNumero(dados[c.nome]);
+            if (!Number.isFinite(x) || x <= 0 || (c.inteiro && !Number.isInteger(x))) ruins.push(c.nome);
+            valores[c.nome] = x;
+        });
+        setInvalidos(ruins);
+        if (ruins.length) return;
+        setCalculo(valores as Entrada);
+        setGrupo('Resultados');
     }
 
-    .tooltiptext::after {
-        content: "";
-        position: absolute;
-        top: 100%;
-        left: 50%;
-        margin-left: -5px;
-        border-width: 5px;
-        border-style: solid;
-        border-color: #555 transparent transparent transparent;
-    }
+    return (
+        <Layout unidade="Decantação">
+            <Calculadora
+                titulo="Decantação"
+                descricao="Dimensiona o decantador convencional de escoamento horizontal e confere os limites da NBR 12216"
+                grupos={GRUPOS}
+                grupo={grupo}
+                bloqueados={calculo ? [] : ['Resultados']}
+                onGrupo={setGrupo}
+                onLimpar={temDados ? () => { limpar(); setCalculo(null); setInvalidos([]); setGrupo(GRUPOS[0]); } : undefined}
+            >
+                {grupo === GRUPOS[0] && <>
+                    {invalidos.length > 0 &&
+                        <MensagemErro role="alert">
+                            Preencha os campos destacados com números maiores que zero{invalidos.includes('ns') ? ' (o número de unidades é inteiro)' : ''}.
+                        </MensagemErro>}
+                    <Row>
+                        <Column>
+                            <Secao>
+                                <FormTitle>Dados do decantador</FormTitle>
+                                <Grid $colunas={4}>
+                                    {CAMPOS.map((c) => (
+                                        <Campo key={c.nome} rotulo={c.rotulo} nome={c.nome} unidade={c.unidade || undefined} dica={c.dica}
+                                            valor={dados[c.nome]} invalido={invalidos.includes(c.nome)}
+                                            onChange={(v) => { alterar(c.nome, v); setInvalidos(invalidos.filter((x) => x !== c.nome)); }} />
+                                    ))}
+                                </Grid>
+                            </Secao>
+                        </Column>
+                        <VerticalSplitter />
+                        <Column>
+                            <PainelAjuda>
+                                <ItemAjuda titulo="Limites da NBR 12216">
+                                    <p>Sem ensaios, decantador convencional (item 5.10): taxa de até 25 m³/m²·dia até 1.000 m³/dia, 35 até 10.000 e 40 acima disso.</p>
+                                    <p>Velocidade longitudinal V0 de até 0,50 cm/s até 10.000 m³/dia e 0,75 cm/s acima, com bom controle operacional.</p>
+                                    <p>Vazão por metro de vertedor de até 1,8 L/s·m.</p>
+                                </ItemAjuda>
+                                <ItemAjuda titulo="Como o decantador é desenhado">
+                                    <p>A largura B sai da área com comprimento igual a 4 vezes a largura, arredondada para cima em metros. As calhas de coleta ocupam 20 % do comprimento.</p>
+                                </ItemAjuda>
+                            </PainelAjuda>
+                        </Column>
+                    </Row>
+                    <BarraAcoes>
+                        <span />
+                        <ActionButton type="button" onClick={dimensionar}>Dimensionar</ActionButton>
+                    </BarraAcoes>
+                </>}
 
-    :hover .tooltiptext {
-        visibility: visible;
-        opacity: 1;
-    }
-    @media(min-width: 768px){
-        width: 130px;
-        font-size: 0.8rem;
-    }
-    @media(min-width: 1000px){
-        min-width: 180px;
-        max-width: 200px;
-        font-size: 1.2rem;
-    }
-`
-const Input = styled.input`
-    width: 60px;
-    outline: none;
-    height: 40px;
-    padding: 10px;
-    text-align: center;
-    border: 1px solid var(--gray-dark);
-    border-radius: 8px;
-    @media(min-width: 768px){
-        width: 120px;
-    }
-`
-const Dimensionar = styled.div`
-    width: 100%;
-    margin-top: 40px;
-`
-const Button = styled.button`
-    width: 150px;
-    padding: 20px;
-    margin-left: auto;
-    margin-right: 0;
-    font-size: 1.2rem;
-    font-weight: bold;
-    border: none;
-    border-radius: 8px;
-    color: var(--branco);
-    background-color: var(--secundaria);
-    outline: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    @media(min-width: 768px){
-        font-size: 1.4rem;
-    }
-`
-const Canvas = styled.div`
-    width: 650px;
-    height: 366px;
-    margin-top: 20px;
-    background-color: #909090;
-`
-const Resultados = styled.div`
-    margin-top: 40px;
-    padding: 0 10px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    @media(min-width: 768px){
-        flex-direction: row;
-    }
-`
-const CardResultados = styled.div`
-    width: 100%;
-    padding: 15px;
-    margin-bottom: 30px;
-    padding-bottom: 15px;
-    background-color: var(--branco);
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-`
-const Consideracoes = styled.div`
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-`
-const Left = styled.div`
-    display: flex;
-    flex-direction: column;
-    @media(min-width: 768px){
-        width: 65%;
-        margin-right: 20px;
-    }
-    @media(min-width: 768px){
-        width: 75%;
-    }
-`
-const Right = styled.div`
-    display: flex;
-    flex-direction: column;
-    @media(min-width: 768px){
-        width: 28%;
-    }
-`
-const TitleCard = styled.h2`
-    margin-bottom: 30px;
-    text-align: left;
-    color: var(--primaria-dark);
-
-`
-const Grid = styled.div`
-    display: grid;
-    grid-gap: 10px;
-    grid-template-columns: auto auto auto;
-    @media(min-width: 1000px){
-        grid-template-columns: auto auto auto auto auto;
-    }
-`
-const Atendida = styled.div`
-    max-width: 200px;
-    padding: 15px;
-    font-weight: bold;
-    text-align: center;
-    background-color:#b4ffb4;
-    color: #000000;
-`
-const NAtendida = styled.div`
-    max-width: 200px;
-    padding: 15px;
-    font-weight: bold;
-    text-align: center;
-    background-color:#ff7070;
-    color: #000000;
-`
-const GridRight = styled.div`
-    margin: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: baseline;
-    text-align: left;
-`
-const Item = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-`
-const ItemRight = styled.div`
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 15px;
-`
-const Name = styled.h2`
-    font-size: 1.3rem;
-    margin-bottom: 10px;
-    color: var(--gray-dark);
-    position: relative;
-    display: inline-block;
-    
-    .tooltiptext {
-        visibility: hidden;
-        width: 120px;
-        background-color: #555;
-        color: #fff;
-        text-align: center;
-        border-radius: 6px;
-        padding: 5px 0;
-        position: absolute;
-        z-index: 1;
-        bottom: 125%;
-        left: 50%;
-        margin-left: -60px;
-        opacity: 0;
-        transition: opacity 0.3s;
-    }
-
-    .tooltiptext::after {
-        content: "";
-        position: absolute;
-        top: 100%;
-        left: 50%;
-        margin-left: -5px;
-        border-width: 5px;
-        border-style: solid;
-        border-color: #555 transparent transparent transparent;
-    }
-
-    :hover .tooltiptext {
-        visibility: visible;
-        opacity: 1;
-    }
-`
-const Value = styled.p`
-    color: var(--gray-dark);
-`
-const TitleValue = styled.h2`
-    font-size: 1.5rem;
-    margin-bottom: 10px;
-    color: var(--primaria);
-`
-interface ResultsProps {
-    q: number,
-    vs: number,
-    ns: number,
-    prof: number
+                {grupo === 'Resultados' && calculo && <Resultados e={calculo} desenho={desenho} onVoltar={() => setGrupo(GRUPOS[0])} />}
+            </Calculadora>
+        </Layout>
+    );
 }
-const PDFButton = styled.button`
-    width: 100px;
-    height: 40px;
-    background-color: var(--primaria);
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    outline: none;
-    color: #fff;
-    font-size: 1.2rem;
-    font-weight: bold;
-`
-const Result: React.FC<ResultsProps> = (props) => {
-    const [V1, V2, V3] = Dec.dec(props.q, props.vs, props.ns, props.prof);
-    // critérios da NBR 12216 (item 5.10) para decantador convencional sem ensaios
-    const nbr = Dec.criterios(Number(props.q), Number(props.vs), Number(props.ns), V1[4]);
-    const capacidadeTexto = nbr.capacidade.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
-    const jsPdfGenerator = () => {
-        var doc = new jsPDF('p', 'pt');
-        doc.setFont('courier');
-        doc.setFontSize(10);
-        doc.text('Universidade Federal Rural do Semi-Árido - UFERSA', 80, 50);
-        doc.text('Este programa é destinado à realização do pré-dimensionamento da', 80, 63);
-        doc.text('unidade de decantação (fluxo horizontal) em estações do', 80, 76);
-        doc.text('tratamento de água do tipo convencional', 80, 89);
 
-        doc.setLineWidth(0.5);
-        doc.line(485, 95, 80, 95);
+function Resultados({ e, desenho, onVoltar }: { e: Entrada; desenho: React.RefObject<HTMLCanvasElement>; onVoltar: () => void }) {
+    const [V1, V2, V3] = Dec.dec(e.q, e.vs, e.ns, e.prof);
+    const nbr = Dec.criterios(e.q, e.vs, e.ns, V1[4]);
+    const cap = numero(nbr.capacidade, 0);
+    const itens: Verificacao[] = [
+        { ok: nbr.taxa.ok, texto: `Taxa de aplicação = ${numero(nbr.taxa.valor, 1)} m³/m²·dia`, detalhe: `NBR 12216, 5.10.4: até ${nbr.taxa.maximo} m³/m²·dia para ${cap} m³/dia` },
+        { ok: nbr.v0.ok, texto: `Velocidade longitudinal V0 = ${numero(nbr.v0.valor, 2)} cm/s`, detalhe: `NBR 12216, 5.10.5: até ${numero(nbr.v0.maximo, 2)} cm/s${nbr.capacidade > 10000 ? ' com bom controle operacional; 1,00 com remoção contínua de lodo' : ''}` },
+        { ok: nbr.unidades.ok, texto: `${nbr.unidades.valor} unidade(s)`, detalhe: `NBR 12216, 5.10.2: pelo menos ${nbr.unidades.minimo} para ${cap} m³/dia` },
+        { ok: V2[0] <= 1.8 + 1e-9, texto: `Vazão por metro de vertedor = ${numero(V2[0], 2)} L/s·m`, detalhe: 'NBR 12216, 5.10.8: até 1,8 L/s·m sem ensaios' },
+        { ok: V3[0] < 20000, texto: `Número de Reynolds = ${numero(V3[0], 0)}`, detalhe: 'Critério de projeto: menor que 20.000' },
+        { ok: V3[1] >= 3 && V3[1] <= 4, texto: `Relação L/B = ${numero(V3[1], 2)}`, detalhe: 'Critério de projeto: entre 3 e 4' },
+    ];
+    const atende = itens.every((i) => i.ok);
+    const imagem = e.ns <= 3 ? img3 : e.ns === 4 ? img4 : img5;
 
-        doc.text('Dados de entrada', 80, 115);
-        doc.text(`Vazão: ${props.q}`, 100, 128);
-        doc.text(`Velocidade de sedimentação: ${props.vs}`, 100, 141);
-        doc.text(`Número das unidades de sedimentação: ${props.ns}`, 100, 154);
-        doc.text(`Profundidade: ${props.prof}`, 100, 167);
-        
-        doc.text('Relatório analítico da unidade de Decantação', 80, 190);
-        doc.text(`Área superficial útil da zona de decantação (m²) = ${V1[0].toFixed(4)}`, 100, 208);
-        doc.text(`Tempo de detenção (s) = ${V1[1].toFixed(4)}`, 100, 221);
-        doc.text(`Largura do decantador (m) = ${V1[2].toFixed(0)}`, 100, 234);
-        doc.text(`Comprimento do decantador (m) = ${V1[3].toFixed(4)}`, 100, 247);
-        doc.text(`Velocidade horizontal (cm/s) = ${V1[4].toFixed(4)}`, 100, 260);
-        doc.text(`Vazão por metro de vertedor (L/s·m) = ${V2[0].toFixed(4)}`, 100, 273);
-        doc.text(`Comprimento do total do vertedor (m) = ${V2[1].toFixed(4)}`, 100, 286);
-        doc.text(`Comprimento das calhas (m) = ${V2[2].toFixed(4)}`, 100, 299);
-        doc.text(`Número de calhas = ${V2[3].toFixed(0)}`, 100, 311);
-        doc.text(`Espaçamento entre calhas (m) = ${V2[4].toFixed(4)}`, 100, 323);
+    const linhas: Array<[string, string, string, number, number]> = [
+        ['As', 'área superficial de cada unidade', 'm²', V1[0], 1],
+        ['t', 'tempo de detenção', 'h', V1[1] / 3600, 2],
+        ['B', 'largura', 'm', V1[2], 0],
+        ['L', 'comprimento', 'm', V1[3], 2],
+        ['V0', 'velocidade longitudinal', 'cm/s', V1[4], 3],
+        ['Ql', 'vazão por metro de vertedor', 'L/s·m', V2[0], 3],
+        ['Lv', 'comprimento total de vertedor', 'm', V2[1], 2],
+        ['Lc', 'comprimento de cada calha', 'm', V2[2], 2],
+        ['n', 'número de calhas', '', V2[3], 0],
+        ['S', 'espaçamento entre calhas', 'm', V2[4], 2],
+        ['Re', 'número de Reynolds', '', V3[0], 0],
+        ['L/B', 'relação comprimento/largura', '', V3[1], 2],
+    ];
 
-        doc.line(485, 350, 80, 350);
-
-        doc.text('Número de Reynolds (Re)', 100, 380);
-        doc.text(`${V3[0]}`, 100, 393);
-        doc.text('comprimento do decantador / largura do decantador', 100, 416);
-        doc.text(`${V3[1].toFixed(4)}`, 100, 429);
-
-        doc.line(485, 450, 80, 450);
-
-        doc.text('Considerações', 80, 480);
-
-        if (V3[0] < 20000) {
-            doc.text('Condição satisfeita:', 100, 503);
-            doc.text('Re menor que 20000', 100, 516);
-        } else {
-            doc.text('Condição não satisfeita:', 100, 503);
-            doc.text('Re maior que 20000', 100, 516);
-        }
-
-        doc.text(`NBR 12216 (capacidade ${capacidadeTexto} m³/dia):`, 100, 534);
-        doc.text(`Taxa ${nbr.taxa.valor} m³/m²dia, máx. ${nbr.taxa.maximo}: ${nbr.taxa.ok ? 'atendida' : 'não atendida'}`, 100, 547);
-        doc.text(`V0 ${nbr.v0.valor.toFixed(2)} cm/s, máx. ${nbr.v0.maximo}: ${nbr.v0.ok ? 'atendida' : 'não atendida'}`, 100, 560);
-        doc.text(`${nbr.unidades.valor} unidade(s), mín. ${nbr.unidades.minimo}: ${nbr.unidades.ok ? 'atendida' : 'não atendida'}`, 100, 573);
-
-        doc.text(`L/B = ${V3[1].toFixed(2)} ${V3[1] >= 3 && V3[1] <= 4 ? '(entre 3 e 4: atendida)' : '(fora de 3 a 4: não atendida)'}`, 100, 590);
-        if (canvas.current != null) {
-            doc.addPage();
-            doc.text('Universidade Federal Rural do Semi-Árido - UFERSA', 80, 50);
-            doc.text('Este programa é destinado à realização do pré-dimensionamento da', 80, 63);
-            doc.text('unidade de decantação (fluxo horizontal) em estações do', 80, 76);
-            doc.text('tratamento de água do tipo convencional', 80, 89);
-
-            doc.setLineWidth(0.5);
-            doc.line(485, 95, 80, 95);
-            doc.text('Detalhamento do pré-dimensionamento da unidade de Decantação', 80, 115);
-            doc.addImage(canvas.current.toDataURL(), 'PNG', 15, 130, 600, 346);
-        }
-        // doc.save('Resultados Decantacao.pdf');
-        doc.output('dataurlnewwindow');
+    function desenhar(ctx: CanvasRenderingContext2D) {
+        ctx.font = '16px Inter, sans-serif';
+        ctx.fillText(`${numero(V1[3], 2)} m`, 350, 50);
+        ctx.fillText(`${numero(V1[2], 0)} m`, 560, 152);
+        ctx.fillText(`${numero(V2[2], 2)} m`, 445, 300);
     }
-
-    const [image, setImage] = useState(null) as any;
-    const canvas = useRef<HTMLCanvasElement>(null);
-
-    useEffect(() => {
-        const img = new Image();
-        if (props.ns === 3) {
-            img.src = Img3;
-        } else {
-            if (props.ns === 4) {
-                img.src = Img4;
-            } else {
-                img.src = Img5;
-            }
-        }
-        if (img !== null) {
-            img.onload = () => setImage(img);
-        }
-
-    }, [props.ns])
-
-    const download = () => {
-        if (image) {
-            let canva = canvas.current;
-            if (canva !== null) {
-                const a = document.createElement('a');
-                a.href = canva.toDataURL();
-                a.download = 'Decantação.png';
-                document.body.appendChild(a);
-                a.click();
-            }
-        }
-    }
-    useEffect(() => {
-        if (image && canvas) {
-            if (canvas.current != null) {
-                const ctx = canvas.current.getContext("2d") as any;
-                ctx.fillStyle = "black";
-                ctx.fillRect(0, 0, 650, 366);
-                ctx.drawImage(image, 0, 0, 650, 366);
-                ctx.font = `16px Roboto`;
-                ctx.fillText(`${V1[3]?.toFixed(2)} m`, 350, 50);
-                ctx.fillText(`${V1[2].toFixed(0)} m`, 560, 152);
-                ctx.fillText(`${V2[2].toFixed(4)} m`, 445, 300);
-                ctx.font = `13px Roboto`;
-            }
-        }
-    }, [image, canvas, V1, V2]);
-
 
     return (
         <>
-            <Canvas id="canvas">
-                <canvas width={650} height={366} ref={canvas}></canvas>
-            </Canvas>
-            <PDFButton onClick={() => download()}>Download</PDFButton>
-            <Resultados>
-                <Left>
-                    <CardResultados>
-                        <TitleCard>Painel de resultados</TitleCard>
-                        <Grid>
-                            <Item>
-                                <Name>As (m²)
-                                    <span className="tooltiptext">Área superficial útil da zona de decantação</span>
-                                </Name>
-                                <Value>{V1[0].toFixed(4)}</Value>
-                            </Item>
-                            <Item>
-                                <Name>t (s)
-                                    <span className="tooltiptext">Tempo de detenção</span>
-                                </Name>
-                                <Value>{V1[1].toFixed(0)}</Value>
-                            </Item>
-                            <Item>
-                                <Name>B (m)
-                                    <span className="tooltiptext">Largura do decantador</span>
-                                </Name>
-                                <Value>{V1[2].toFixed(0)}</Value>
-                            </Item>
-                            <Item>
-                                <Name>L (m)
-                                    <span className="tooltiptext">Comprimento do decantador</span>
-                                </Name>
-                                <Value>{V1[3].toFixed(4)}</Value>
-                            </Item>
-                            <Item>
-                                <Name>V<sub>0</sub> (cm/s)
-                                    <span className="tooltiptext">Velocidade horizontal</span>
-                                </Name>
-                                <Value>{V1[4].toFixed(4)}</Value>
-                            </Item>
-                            <Item>
-                                <Name>Ql (L/s·m)
-                                    <span className="tooltiptext">Vazão que passa pela unidade</span>
-                                </Name>
-                                <Value>{V2[0].toFixed(4)}</Value>
-                            </Item>
-                            <Item>
-                                <Name>Lv (m)
-                                    <span className="tooltiptext">Comprimento do total do vertedor</span>
-                                </Name>
-                                <Value>{V2[1].toFixed(4)}</Value>
-                            </Item>
-                            <Item>
-                                <Name>Lcalha (m)
-                                    <span className="tooltiptext">Comprimento das calhas</span>
-                                </Name>
-                                <Value>{V2[2].toFixed(4)}</Value>
-                            </Item>
-                            <Item>
-                                <Name>Nº de calhas
-                                    <span className="tooltiptext">Número de calhas</span>
-                                </Name>
-                                <Value>{V2[3].toFixed(0)}</Value>
-                            </Item>
-                            <Item>
-                                <Name>S entre calhas (m)
-                                    <span className="tooltiptext">Espaçamento entre calhas</span>
-                                </Name>
-                                <Value>{V2[4].toFixed(4)}</Value>
-                            </Item>
-                        </Grid>
-                    </CardResultados>
-                    <CardResultados>
-                        <TitleCard>Painel de considerações</TitleCard>
-                        <Consideracoes>
-                            {
-                                V3[0] < 20000 &&
-                                <Atendida>
-                                    <p>
-                                        Condição satisfeita:<br />
-                                        Re menor que 20000
-                                    </p>
-                                </Atendida>
-                            }
-                            {
-                                V3[0] >= 20000 &&
-                                <NAtendida>
-                                    <p>
-                                        Condição não satisfeita:<br />
-                                        Re maior ou igual a 20000
-                                    </p>
-                                </NAtendida>
-                            }
-                            {
-                                [
-                                    {
-                                        ok: nbr.taxa.ok,
-                                        texto: `Taxa de aplicação ${nbr.taxa.valor} m³/m²·dia (máx. ${nbr.taxa.maximo} para ${capacidadeTexto} m³/dia)`,
-                                    },
-                                    {
-                                        ok: nbr.v0.ok,
-                                        texto: `V0 = ${nbr.v0.valor.toFixed(2).replace('.', ',')} cm/s (máx. ${nbr.v0.maximo.toFixed(2).replace('.', ',')} cm/s${nbr.capacidade > 10000 ? ', com bom controle operacional; 1,00 com remoção contínua de lodo' : ''})`,
-                                    },
-                                    {
-                                        ok: nbr.unidades.ok,
-                                        texto: `${nbr.unidades.valor} unidade(s) (mín. ${nbr.unidades.minimo} para ${capacidadeTexto} m³/dia)`,
-                                    },
-                                ].map((c) => c.ok
-                                    ? <Atendida key={c.texto}><p>{c.texto}<br />(NBR 12216: condição atendida)</p></Atendida>
-                                    : <NAtendida key={c.texto}><p>{c.texto}<br />(NBR 12216: condição não atendida!)</p></NAtendida>)
-                            }
-                            {
-                                V3[1] >= 3 && V3[1] <= 4 &&
-                                <Atendida>
-                                    <p>
-                                        L/B = 3 ou 4 <br />
-                                        (Condição atendida!)
-                                    </p>
-                                </Atendida>
-                            }
-                            {
-                                (V3[1] < 3 || V3[1] > 4) &&
-                                <NAtendida>
-                                    <p>
-                                        L/B != 3 ou 4 <br />
-                                        (Condição não atendida!)
-                                    </p>
-                                </NAtendida>
-                            }
-                        </Consideracoes>
-                    </CardResultados>
+            <Conclusao $atende={atende} role="status">
+                <strong>{atende ? 'O decantador atende aos critérios verificados' : 'O decantador não atende a todos os critérios'}</strong>
+                {numero(e.ns, 0)} unidade(s) de {numero(V1[2], 0)} m × {numero(V1[3], 2)} m para {cap} m³/dia.
+            </Conclusao>
 
-                </Left>
-                <Right>
-                    <CardResultados>
-                        <GridRight>
-                            <ItemRight>
-                                <TitleValue>Nº de Reynolds (Re)</TitleValue>
-                                <Value>{V3[0]}</Value>
-                            </ItemRight>
-                            <ItemRight>
-                                <TitleValue>L/B</TitleValue>
-                                <Value>{V3[1].toFixed(5)}</Value>
-                            </ItemRight>
-                        </GridRight>
-                    </CardResultados>
+            <Destaques>
+                <Destaque><span>Largura × comprimento</span><strong>{numero(V1[2], 0)} × {numero(V1[3], 1)} <small>m</small></strong></Destaque>
+                <Destaque><span>Área de cada unidade</span><strong>{numero(V1[0], 0)} <small>m²</small></strong></Destaque>
+                <Destaque><span>Tempo de detenção</span><strong>{numero(V1[1] / 3600, 2)} <small>h</small></strong></Destaque>
+                <Destaque><span>Calhas de coleta</span><strong>{numero(V2[3], 0)} <small>× {numero(V2[2], 2)} m</small></strong></Destaque>
+            </Destaques>
 
-                    <PDFButton onClick={jsPdfGenerator}>Gerar PDF</PDFButton>
-                </Right>
-            </Resultados>
+            <Bloco>
+                <TituloBloco>Baixar</TituloBloco>
+                <Botoes>
+                    <BotaoSecundario type="button" onClick={() => relatorioDecantacao(e.q, e.vs, e.ns, e.prof, desenho.current)}>Relatório (PDF)</BotaoSecundario>
+                    <BotaoSecundario type="button" onClick={() => baixarPng(desenho.current, 'Decantação.png')}>Desenho (PNG)</BotaoSecundario>
+                </Botoes>
+            </Bloco>
+
+            <TituloBloco>Verificações</TituloBloco>
+            <Verificacoes rotulo="Verificações do decantador" itens={itens} />
+
+            <Desenho ref={desenho} imagem={imagem} largura={650} altura={366} titulo="Planta do decantador com as medidas calculadas" desenhar={desenhar} />
+
+            <CaixaTabela $estreita>
+                <Tabela>
+                    <caption>Resultados por unidade</caption>
+                    <thead><tr><th scope="col">Grandeza</th><th scope="col">Valor</th></tr></thead>
+                    <tbody>
+                        {linhas.map(([s, d, u, x, c]) => (
+                            <tr key={s}>
+                                <th scope="row">{s}{u && <> <Unidade>({u})</Unidade></>}<Descricao>{d}</Descricao></th>
+                                <td>{numero(x, c)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </Tabela>
+            </CaixaTabela>
+
+            <Paragrafo style={{ fontSize: 13 }}>Pré-dimensionamento para fins didáticos e de estudo; confira o projeto com a norma e um responsável técnico.</Paragrafo>
+            <BarraAcoes>
+                <CancelButton type="button" onClick={onVoltar}>Voltar aos dados</CancelButton>
+                <span />
+            </BarraAcoes>
         </>
     );
 }
-
-const Decantacao: React.FC<ResultsProps> = (props) => {
-
-    var pontos = 5;
-    var tmp = [];
-    for (var i = 0; i < pontos; i++) {
-        tmp.push(i);
-    }
-    const [q, setQ] = useState("");
-    const [vs, setVs] = useState("");
-    const [nsedimentacao, setNsedimentacao] = useState("");
-    const [profundidade, setProfundidade] = useState("");
-    const [calculated, setCalculated] = useState("");
-    const [isDimensione, setIsDimensione] = useState(false);
-    const [qCalculated, setQCalculated] = useState("");
-    const [vsCalculated, setVsCalculated] = useState("");
-    const [nsedimentacaoCalculated, setNsedimentacaoCalculated] = useState("");
-    const [profundidadeCalculated, setProfundidadeCalculated] = useState("");
-
-
-    function calcular() {
-        if (q !== "" && vs !== "" && nsedimentacao !== "" && profundidade !== "") {
-            setIsDimensione(true);
-            setQCalculated(q);
-            setVsCalculated(vs);
-            setNsedimentacaoCalculated(nsedimentacao);
-            setProfundidadeCalculated(profundidade);
-            setCalculated(q);
-        } else {
-            alert("preencha todos os campos");
-        }
-    }
-    function setVazao(n: string) {
-        setIsDimensione(false);
-        setQ(n);
-    }
-    function setvs(n: string) {
-        setIsDimensione(false);
-        setVs(n)
-    }
-    function setSedmentacao(n: string) {
-        setIsDimensione(false);
-        setNsedimentacao(n);
-    }
-    function setProfund(n: string) {
-        setIsDimensione(false);
-        setProfundidade(n);
-    }
-
-    return (
-        <PageTemplate
-            title="Decantação"
-            topBar={true}
-        >
-            <ETA2Container>
-                <Card>
-                    <Entradas>
-                        <Op>
-                            <Title>
-                                <span className="tooltiptext">Vazão de clarificação</span>
-                                Q (m³/s)
-                            </Title>
-                            <Input aria-label="Vazão Q (m³/s)"
-                                type="number"
-
-                                onChange={e => setVazao(e.target.value)}
-                            />
-                        </Op>
-                        <Op>
-                            <Title>vs (m/dia)
-                                <span className="tooltiptext">Velocidade de sedimentação</span>
-                            </Title>
-                            <Input aria-label="Velocidade de sedimentação vs (m/dia)"
-                                type="number"
-
-                                onChange={e => setvs(e.target.value)}
-                            />
-                        </Op>
-                        <Op>
-                            <Title>
-                                <span className="tooltiptext">Número das unidades de sedimentação</span>
-                                Nº un. de sedimentação
-                            </Title>
-                            <Input aria-label="Número de unidades de sedimentação"
-                                type="number"
-
-                                onChange={e => setSedmentacao(e.target.value)}
-                            />
-                        </Op>
-                        <Op>
-                            <Title>Profundidade (m)</Title>
-                            <Input aria-label="Profundidade (m)"
-                                type="number"
-
-                                onChange={e => setProfund(e.target.value)}
-                            />
-                        </Op>
-                    </Entradas>
-                    <Dimensionar>
-                        <Button onClick={calcular}>
-                            Dimensionar
-                        </Button>
-                    </Dimensionar>
-                </Card>
-
-                {
-                    isDimensione === true &&
-                    <Result
-                        q={Number(q)}
-                        vs={Number(vs)}
-                        ns={Number(nsedimentacao)}
-                        prof={Number(profundidade)}
-                    />
-                }
-                {
-                    isDimensione === false && calculated !== "" &&
-                    <Result
-                        q={Number(qCalculated)}
-                        vs={Number(vsCalculated)}
-                        ns={Number(nsedimentacaoCalculated)}
-                        prof={Number(profundidadeCalculated)}
-                    />
-                }
-            </ETA2Container>
-        </PageTemplate>
-    );
-}
-
-export default Decantacao;

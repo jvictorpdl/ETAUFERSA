@@ -1,30 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap');
-
-:root {
-    --primaria: #3498DB;
-    --primaria-dark: #2980B9;
-    --primaria-light: #2F80ED;
-
-    --secundaria: #9B59B6;
-    --secundaria-dark: #A00037;
-    --secundaria-light: #FF5C8D;
-    
-    --h2: #828282;
-    --bege: #B47B92;
-    --azul: #009BE5;
-    --text: #243E6A;
-    --branco: #FFFFFF;
-    --cinza: #1d1212;
-    --body: #F0F0F7;
-    --fundo: #DCE6F2;
-    --SubMenuFundo: #243E6A;
-    --gray: #c2c2c2;
-    --gray-light: #e6e6f0;
-    --gray-dark: #828282;
-    --rodape: #424155;
-    --copy: #2B2B2B;
-    font-size: 80%;
-}
+/* padrão visual das ferramentas da FACEU (o mesmo do Calimpe-H20); a fonte vem do index.html */
 
 * {
     margin: 0;
@@ -36,31 +10,18 @@ html, body {
     overflow-x: hidden;
 }
 
-html, body, #root {
-    height: 100vh;
-    background-color: var(--fundo);
-    font-family: 'Roboto', sans-serif;
-}
-
 body {
-    background-color: var(--body);
+    background-color: #F1F8FF;
+    color: #374151;
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Celular: nada da página passa da largura da tela */
-main {
-    max-width: 100%;
-    min-width: 0;
+button, input, select {
+    font-family: inherit;
 }
 
-main div,
-main section,
-main table,
-main canvas,
-main img {
-    max-width: 100%;
-}
-
-main canvas,
-main img {
-    height: auto;
+:focus-visible {
+    outline: 2px solid #17737A;
+    outline-offset: 2px;
 }
