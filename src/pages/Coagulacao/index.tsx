@@ -349,6 +349,15 @@ interface Table1Props {
     points: number,
     vet: number[]
 }
+const Aviso = styled.p`
+    margin: 12px 0;
+    padding: 12px 16px;
+    border-left: 4px solid #b45309;
+    background: #fef3c7;
+    color: #78350f;
+    max-width: 550px;
+`
+
 const PDFButton = styled.button`
     width: 100px;
     height: 40px;
@@ -529,6 +538,14 @@ const Result: React.FC<ResultsProps> = (props) => {
             </Canvas>
             <PDFButton onClick={() => download()}>Download</PDFButton>
             {
+                H[3] <= 0 &&
+                <Aviso role="alert">
+                    Com esta vazão a lâmina na saída da calha (h3 = {H[3].toFixed(4)} m) fica abaixo
+                    do degrau (N − K). O ressalto não se forma dentro da calha e os resultados de
+                    h3, V3, T e G não são válidos. Aumente a vazão ou escolha uma calha menor.
+                </Aviso>
+            }
+            {
                 <Resultados>
                     <Left>
                         <CardResultados>
@@ -684,7 +701,7 @@ const Coagulacao: React.FC<ResultsProps> = (props) => {
         setNum(n);
         var valor = Number(n);
         if (options === "0") {
-            if (valor >= 0.0008 && valor <= 1.4272) {
+            if (valor >= 0.0008 && valor <= 0.0538) {
                 setAcepted(true);
             } else {
                 setAcepted(false);
