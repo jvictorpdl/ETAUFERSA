@@ -1,7 +1,7 @@
 import { multiply, inv } from 'mathjs';
 import { corrigirCamaras } from './flocCorrecao';
 
-export default {
+const Floc = {
     floc(Q: number, Ttf: number, Nc: number, H: number, Nd: number, L: number, G1: number, G2: number, G3: number, G4: number, FC: number) {
         var Tf = Ttf * 60;
         var am = [[1, 1, 1, 1],
@@ -15,7 +15,7 @@ export default {
         var inve = inv(am);
         var rm1 = multiply(inve, bm);
 
-        var rm = <any>[];
+        var rm = [] as any;
         rm = rm1;
         var t1 = rm[0];
         var t2 = rm[1];
@@ -119,3 +119,5 @@ export default {
     }
 
 }
+
+export default Floc;

@@ -1,9 +1,7 @@
-import React, { Component, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import Coag from '../../Utils/Coag';
 import PageTemplate from '../PageTemplate';
-import { Link } from 'react-router-dom';
-import { boolean, dotDivide } from 'mathjs';
 import Img from '../../assets/images/exemploCalha.png';
 import Img1 from '../../assets/images/exemploCoag.png';
 import jsPDF from 'jspdf';
@@ -329,22 +327,6 @@ const TitleValue = styled.h2`
         opacity: 1;
     }
 `
-const CardRow = styled.div`
-    margin-bottom: 10px;
-    border-bottom: 1px solid var(--gray);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-`
-const P1 = styled.p`
-    font-size: 1.3rem;
-    margin-right: 15px;
-    color: var(--gray-dark);
-`
-const P2 = styled.p`
-    font-size: 1.3rem;
-    color: var(--gray-dark);
-`
 interface Table1Props {
     points: number,
     vet: number[]
@@ -530,7 +512,7 @@ const Result: React.FC<ResultsProps> = (props) => {
                 ctx.font = `13px Roboto`;
             }
         }
-    }, [image, canvas]);
+    }, [image, canvas, H, O, V, props.options]);
     return (
         <>
             <Canvas id="canvas">
@@ -669,7 +651,6 @@ const Result: React.FC<ResultsProps> = (props) => {
 const Coagulacao: React.FC<ResultsProps> = (props) => {
 
 
-    const [errInput, setErrInput] = useState(true);
 
     var v: any = [];
     const [options, setOptions] = useState("-1");
@@ -681,7 +662,7 @@ const Coagulacao: React.FC<ResultsProps> = (props) => {
     const [valueChecked, setValueChecked] = useState(false);
 
     function calcular() {
-        if (num != "" && options != "-1" && acepted === true) {
+        if (num !== "" && options !== "-1" && acepted === true) {
             setIsDimensione(true);
             setCalculated(num);
             var v = [] as any;
@@ -797,7 +778,7 @@ const Coagulacao: React.FC<ResultsProps> = (props) => {
                 }
             }
         }
-        if (acepted == true) {
+        if (acepted === true) {
             setIsDimensione(false);
         }
 

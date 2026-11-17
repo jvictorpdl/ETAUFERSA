@@ -1,12 +1,9 @@
-import React, { Component, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import Filtr from '../../Utils/Filtr';
 import PageTemplate from '../PageTemplate';
-import Eta1 from '../../components/Home/ETA1';
-import { Link } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import Img1 from '../../assets/images/exemploFilt.png';
-import { dotDivide } from 'mathjs';
 
 const EtaContainer = styled.div`
     display: flex;
@@ -296,10 +293,6 @@ const Name = styled.h2`
 const Value = styled.p`
     color: var(--gray-dark);
 `
-const Right = styled.div`
-    display: flex;
-    flex-direction: column;
-`
 const PDFButton = styled.button`
     width: 100px;
     height: 40px;
@@ -492,7 +485,7 @@ const Result: React.FC<ResultsProps> = (props) => {
                 ctx.fillText(`espaço entre calhas = ${V2[6]?.toFixed(4)} m`, 380, 420);
             }
         }
-    }, [image, canvas]);
+    }, [image, canvas, V1, V2, V4, props.a1, props.altura, props.an1]);
 
     return (
         <>
@@ -593,13 +586,9 @@ const Result: React.FC<ResultsProps> = (props) => {
                                 <Value>{V3[2]?.toFixed(0)}</Value><br />
                                 <Value>
                                     {
-                                        (Number(V3[2]) > 1000) &&
-                                        <p>
-                                            Superior a 1000
-                                        </p> ||
-                                        <p>
-                                            Inferior a 1000
-                                        </p>
+                                        (Number(V3[2]) > 1000)
+                                            ? <p>Superior a 1000</p>
+                                            : <p>Inferior a 1000</p>
                                     }
                                 </Value>
                             </Item>
@@ -656,15 +645,6 @@ export default function Coagulacao() {
     for (var i = 0; i < pontos; i++) {
         tmp.push(i);
     }
-    const areia: string[] = [];
-    const VAreia: number[] = [];
-    const AreiaCalculated: number[] = [];
-
-    const antracito: string[] = [];
-    const VAntracito: number[] = [];
-    const AntracitoCalculated: number[] = [];
-
-    const [num, setNum] = useState("");
 
     const [a1, setA1] = useState("");
     const [a2, setA2] = useState("");
@@ -729,7 +709,7 @@ export default function Coagulacao() {
         if (a1 === "" || a2 === "" || a3 === "" || a4 === "" || a5 === "" || a6 === "" || an7 === "" || an1 === "" || an2 === "" || an3 === "" || an4 === "" || an5 === "" || an6 === "" || an7 === "") {
             cont++;
         }
-        if (Q != "" && taxaFiltracao != "" && ndecantadores != "" && ldecantador != "" && lCalhaLavagem != "" && nCalhas != "" && vazaoAr != "" && altura != "" && porosidade != "" && cEsfericidade != "" && d10 != "" && d102 != "" && cont === 0) {
+        if (Q !== "" && taxaFiltracao !== "" && ndecantadores !== "" && ldecantador !== "" && lCalhaLavagem !== "" && nCalhas !== "" && vazaoAr !== "" && altura !== "" && porosidade !== "" && cEsfericidade !== "" && d10 !== "" && d102 !== "" && cont === 0) {
             setIsDimensione(true);
             setCalculated(Q);
             setQCalculated(Q);

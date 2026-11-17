@@ -1,4 +1,4 @@
-export default {
+const Dec = {
     dec(Q:number, vs:number, Ns:number, H:number) {
 
         var Qq = Q / Ns;
@@ -43,3 +43,5 @@ export default {
         return [V1,V2,V3];
     }
 }
+
+export default Dec;

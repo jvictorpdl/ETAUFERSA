@@ -1,4 +1,4 @@
-export default {
+const Coag = {
     coag(Q: number, v: number[]) {
         const W = v[0];
         const k = v[1];
@@ -184,3 +184,5 @@ export default {
     }
 
 }
+
+export default Coag;

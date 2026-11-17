@@ -391,7 +391,7 @@ const Result: React.FC<ResultsProps> = (props) => {
             img.onload = () => setImage(img);
         }
 
-    }, [])
+    }, [props.ns])
 
     const download = () => {
         if (image) {
@@ -408,8 +408,6 @@ const Result: React.FC<ResultsProps> = (props) => {
     useEffect(() => {
         if (image && canvas) {
             if (canvas.current != null) {
-                //largura da calha
-                var lc = (V1[2] - ((V2[3] + 1) * V2[4])) / V2[3];
                 const ctx = canvas.current.getContext("2d") as any;
                 ctx.fillStyle = "black";
                 ctx.fillRect(0, 0, 650, 366);
@@ -421,7 +419,7 @@ const Result: React.FC<ResultsProps> = (props) => {
                 ctx.font = `13px Roboto`;
             }
         }
-    }, [image, canvas]);
+    }, [image, canvas, V1, V2]);
 
 
     return (
@@ -546,7 +544,7 @@ const Result: React.FC<ResultsProps> = (props) => {
                                 </Atendida>
                             }
                             {
-                                V3[1] < 3 || V3[1] > 4 &&
+                                (V3[1] < 3 || V3[1] > 4) &&
                                 <NAtendida>
                                     <p>
                                         L/B != 3 ou 4 <br />
@@ -579,10 +577,6 @@ const Result: React.FC<ResultsProps> = (props) => {
     );
 }
 
-
-interface ImageData {
-    src: string;
-}
 const Decantacao: React.FC<ResultsProps> = (props) => {
 
     var pontos = 5;

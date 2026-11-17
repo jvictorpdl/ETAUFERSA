@@ -1,4 +1,4 @@
-export default {
+const Filtr = {
     filtr(Q: number, q: number, Nd: number, L: number, Lcl: number, deefar: number, deefant: number, d10ar: number, d10ant: number, cuar: number, cuant: number, roar: number, roant: number, e0ar: number, e0ant: number, ecs: number, qdar: number, ncalhas: number, lar: number, lant: number, lcs: number, twar: number, twant: number, twcs: number, d10cs: number, d90cs: number) {
 
 
@@ -135,3 +135,5 @@ export default {
         return [hf, vMf, V1, V2, V3, V4];
     }
 }
+
+export default Filtr;

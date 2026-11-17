@@ -1,4 +1,4 @@
-import React, { Component, FormEvent, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import PageTemplate from '../PageTemplate';
 import Floc from '../../Utils/Floc';
@@ -9,6 +9,19 @@ import jsPDF from 'jspdf';
 import Img3 from '../../assets/images/exemploFloc3.png';
 import Img4 from '../../assets/images/exemploFloc.png';
 import Img5 from '../../assets/images/exemploFloc5.png';
+
+// Escolhe o floculador pelo número de câmaras (ncvalue). Antes o bloco do componente principal
+// escolhia pelos G4/G5 preenchidos, que ficam guardados ao trocar de 5 para 3 ou 4 câmaras.
+function rodarFloc(p: any, fator: number): any[] {
+    if (p.ncvalue === 3) {
+        return Floc3.floc(p.qvalue, p.tvalue, p.ncvalue, p.profvalue, p.ndvalue, p.lvalue, p.g1value, p.g2value, p.g3value, fator);
+    }
+    if (p.ncvalue === 4) {
+        return Floc.floc(p.qvalue, p.tvalue, p.ncvalue, p.profvalue, p.ndvalue, p.lvalue, p.g1value, p.g2value, p.g3value, p.g4value, fator);
+    }
+    return Floc5.floc(p.qvalue, p.tvalue, p.ncvalue, p.profvalue, p.ndvalue, p.lvalue, p.g1value, p.g2value, p.g3value, p.g4value, p.g5value, fator);
+}
+
 const ETA3Container = styled.div`
     width: 100%;
     padding-top: 40px;
@@ -402,19 +415,10 @@ interface ResultsProps {
 }
 const Tr1: React.FC<Table1Props> = (props) => {
     var tmp = [];
-    var pontos = 1;
     for (var i = 0; i < props.ncvalue; i++) {
         tmp.push(i);
     }
-    if (props.ncvalue == 4) {
-        var [M22, M2, M11, q, Vol, A, B, a] = Floc.floc(props.qvalue, props.tvalue, props.ncvalue, props.profvalue, props.ndvalue, props.lvalue, props.g1value, props.g2value, props.g3value, props.g4value, props.fatorvalue);
-    } else {
-        if (props.ncvalue == 3) {
-            var [M22, M2, M11, q, Vol, A, B, a] = Floc3.floc(props.qvalue, props.tvalue, props.ncvalue, props.profvalue, props.ndvalue, props.lvalue, props.g1value, props.g2value, props.g3value, props.fatorvalue);
-        } else {
-            var [M22, M2, M11, q, Vol, A, B, a] = Floc5.floc(props.qvalue, props.tvalue, props.ncvalue, props.profvalue, props.ndvalue, props.lvalue, props.g1value, props.g2value, props.g3value, props.g4value, props.g5value, props.fatorvalue);
-        }
-    }
+    var M11 = rodarFloc(props, props.fatorvalue)[2];
     var [V11, V12, V13, V14, V15, V16, V17, V18] = Floc.m11(M11);
     return (
         <>
@@ -441,19 +445,10 @@ const Tr1: React.FC<Table1Props> = (props) => {
 }
 const Tr2: React.FC<Table1Props> = (props) => {
     var tmp = [];
-    var pontos = 1;
     for (var i = 0; i < props.ncvalue; i++) {
         tmp.push(i);
     }
-    if (props.ncvalue == 4) {
-        var [M22, M2, M11, q, Vol, A, B, a] = Floc.floc(props.qvalue, props.tvalue, props.ncvalue, props.profvalue, props.ndvalue, props.lvalue, props.g1value, props.g2value, props.g3value, props.g4value, props.fatorvalue);
-    } else {
-        if (props.ncvalue == 3) {
-            var [M22, M2, M11, q, Vol, A, B, a] = Floc3.floc(props.qvalue, props.tvalue, props.ncvalue, props.profvalue, props.ndvalue, props.lvalue, props.g1value, props.g2value, props.g3value, props.fatorvalue);
-        } else {
-            var [M22, M2, M11, q, Vol, A, B, a] = Floc5.floc(props.qvalue, props.tvalue, props.ncvalue, props.profvalue, props.ndvalue, props.lvalue, props.g1value, props.g2value, props.g3value, props.g4value, props.g5value, props.fatorvalue);
-        }
-    }
+    var M22 = rodarFloc(props, props.fatorvalue)[0];
     var [V21, V22, V23, V24, V25, V26, V27, V28] = Floc.m22(M22);
     return (
         <>
@@ -492,15 +487,7 @@ const Result: React.FC<ResultsProps> = (props) => {
     const [image, setImage] = useState(null) as any;
     let canvas = useRef<HTMLCanvasElement>(null);
 
-    if (props.g4value !== 0 && props.g5value === 0) {
-        var [M22, M2, M11, q, Vol, A, B, a] = Floc.floc(props.qvalue, props.tvalue, props.ncvalue, props.profvalue, props.ndvalue, props.lvalue, props.g1value, props.g2value, props.g3value, props.g4value, fatorvalue);
-    } else {
-        if (props.g4value === 0) {
-            var [M22, M2, M11, q, Vol, A, B, a] = Floc3.floc(props.qvalue, props.tvalue, props.ncvalue, props.profvalue, props.ndvalue, props.lvalue, props.g1value, props.g2value, props.g3value, fatorvalue);
-        } else {
-            var [M22, M2, M11, q, Vol, A, B, a] = Floc5.floc(props.qvalue, props.tvalue, props.ncvalue, props.profvalue, props.ndvalue, props.lvalue, props.g1value, props.g2value, props.g3value, props.g4value, props.g5value, fatorvalue);
-        }
-    }
+    var [M22, , M11, q, Vol, A, B, a] = rodarFloc(props, fatorvalue);
 
     var secondTable = 0;
     var [V11, V12, V13, V14, V15, V16, V17, V18] = Floc.m11(M11);
@@ -567,14 +554,10 @@ const Result: React.FC<ResultsProps> = (props) => {
         doc.text('canais: ', 100, 160);
         let canais = [props.g1value, props.g2value, props.g3value, props.g4value, props.g5value];
         let linha = 160;
-        canais.map((e, index) =>{
-            linha+=13;
-            if(e !== 0){
-                return(
-                    doc.text(`Canal ${index+1} = ${e}`, 100, linha)
-                )
-            }
-        })
+        canais.slice(0, props.ncvalue).forEach((e, index) => {
+            linha += 13;
+            doc.text(`Canal ${index + 1} = ${e}`, 100, linha);
+        });
         doc.text('canais: ', 100, 160);
         
         doc.line(485, 255, 80, 255);
@@ -600,7 +583,7 @@ const Result: React.FC<ResultsProps> = (props) => {
         doc.line(485, 395, 80, 395);
 
         linha = 425;
-        for (var i = 0; i < props.ncvalue; i++) {
+        for (let i = 0; i < props.ncvalue; i++) {
             doc.text(`${V11[i].toFixed(0)}`, 84, linha);
             doc.text(`${V12[i].toFixed(4)}`, 105, linha);
             doc.text(`${V13[i].toFixed(4)}`, 160, linha);
@@ -623,9 +606,9 @@ const Result: React.FC<ResultsProps> = (props) => {
         doc.line(485, 395, 485, linha);
         doc.line(485, linha, 80, linha);
 
-        if (M22 != undefined) {
+        if (M22 !== undefined) {
 
-            doc.text(`O canal 1 foi superior a 70 1/s, e usando um fator de correção de ${fatorvalue}%,`, 80, 519);
+            doc.text(`Câmara(s) com G acima de 70 1/s; usando um fator de correção de ${fatorvalue}%,`, 80, 519);
             doc.text(`tem-se:`, 80, 532);
 
             doc.line(485, 550, 80, 550);
@@ -641,7 +624,7 @@ const Result: React.FC<ResultsProps> = (props) => {
 
             linha = 580;
 
-            for (var i = 0; i < props.ncvalue; i++) {
+            for (let i = 0; i < props.ncvalue; i++) {
                 doc.text(`${V21[i].toFixed(0)}`, 84, linha);
                 doc.text(`${V22[i].toFixed(4)}`, 105, linha);
                 doc.text(`${V23[i].toFixed(4)}`, 160, linha);
@@ -720,7 +703,7 @@ const Result: React.FC<ResultsProps> = (props) => {
             img.onload = () => setImage(img);
         }
 
-    }, [])
+    }, [props.ncvalue])
 
     const download = () => {
         if (image) {
@@ -773,7 +756,7 @@ const Result: React.FC<ResultsProps> = (props) => {
                 ctx.fillText(`0.10`, 140, 385);
             }
         }
-    }, [image, canvas]);
+    }, [image, canvas, B, V12, a, props.ncvalue, props.profvalue, q]);
 
     return (
         <>
@@ -968,7 +951,6 @@ const Result: React.FC<ResultsProps> = (props) => {
 const Floculacao: React.FC<ResultsProps> = (props) => {
 
 
-    const [qms, setQms] = useState("");
     const [gs, setGs] = useState("3");
     const [gValues, setGValues] = useState<string[]>([]);
     const [valuesInputs, setValuesInputs] = useState({});

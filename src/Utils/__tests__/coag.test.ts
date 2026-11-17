@@ -71,7 +71,8 @@ describe('Ressalto na calha Parshall (coag)', () => {
         const [V, H, O] = Coag.coag(Q, v);
         [V[0], V[1], V[2], H[0], H[1], H[2]].forEach((x) => expect(x).toBeGreaterThan(0));
         // h3 <= 0: a página mostra aviso de que h3, V3, T e G não valem
-        if (H[3] > 0) [...V, ...H, ...O].forEach((x) => expect(Number.isFinite(x) && x > 0).toBe(true));
+        const todosValidos = [...V, ...H, ...O].every((x) => Number.isFinite(x) && x > 0);
+        expect(H[3] <= 0 || todosValidos).toBe(true);
       });
 
       test(`opção ${i}, Q=${qls.toFixed(1)} L/s: energia conservada e h2 conjugada de h1`, () => {
