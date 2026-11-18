@@ -4,18 +4,19 @@ import Layout from '../../components/ui/Layout';
 import Calculadora from '../../components/ui/Calculadora';
 import { Campo } from '../../components/ui/Campo';
 import { ItemAjuda, PainelAjuda } from '../../components/ui/Ajuda';
-import Desenho, { baixarPng } from '../../components/ui/Desenho';
+import Desenho, { capturarDesenho } from '../../components/ui/Desenho';
+import BaixarRelatorio from '../../components/ui/BaixarRelatorio';
+import { linha, Relatorio } from '../../relatorio/modelo';
 import Verificacoes, { Verificacao } from '../../components/ui/Verificacoes';
 import useDados from '../../components/ui/useDados';
 import { lerNumero, numero } from '../../components/ui/formato';
 import {
-    ActionButton, BarraAcoes, Bloco, Botoes, BotaoSecundario, CaixaTabela, CancelButton, Column, Conclusao,
+    ActionButton, BarraAcoes, CaixaTabela, CancelButton, Column, Conclusao,
     Descricao, Destaque, Destaques, FormTitle, Grid, MensagemErro, Paragrafo, Row, Secao, Tabela, TituloBloco, Unidade, VerticalSplitter,
 } from '../../components/ui/estilos';
 import img3 from '../../assets/images/dec3.png';
 import img4 from '../../assets/images/dec4.png';
 import img5 from '../../assets/images/dec5.png';
-import { relatorioDecantacao } from './relatorio';
 
 const GRUPOS = ['Dados do decantador', 'Resultados'];
 
@@ -134,6 +135,29 @@ function Resultados({ e, desenho, onVoltar }: { e: Entrada; desenho: React.RefOb
         ['L/B', 'relação comprimento/largura', '', V3[1], 2],
     ];
 
+    const montar = (): Relatorio => ({
+        titulo: 'Decantação',
+        descricao: 'Decantador convencional de escoamento horizontal, com os limites da NBR 12216',
+        conclusao: {
+            titulo: atende ? 'O decantador atende aos critérios verificados' : 'O decantador não atende a todos os critérios',
+            atende,
+            linhas: [`${numero(e.ns, 0)} unidade(s) de ${numero(V1[2], 0)} m × ${numero(V1[3], 2)} m para ${cap} m³/dia.`],
+        },
+        fornecidos: [{
+            titulo: 'Dados do decantador',
+            linhas: [
+                linha('Q', 'vazão total da ETA', e.q, 'm³/s', 4),
+                linha('vs', 'taxa de aplicação superficial', e.vs, 'm³/m²·dia', 2),
+                linha('Ns', 'número de unidades', e.ns, '', 0),
+                linha('H', 'profundidade útil', e.prof, 'm', 2),
+            ],
+        }],
+        calculados: [{ titulo: 'Decantador (por unidade)', linhas: [linha('Capacidade', 'capacidade da ETA', nbr.capacidade, 'm³/dia', 0), ...linhas.map(([s, d, u, x, c]) => linha(s, d, x, u, c))] }],
+        verificacoes: itens,
+        tabelas: [],
+        desenho: capturarDesenho(desenho.current, 650, 366),
+    });
+
     function desenhar(ctx: CanvasRenderingContext2D) {
         ctx.font = '16px Inter, sans-serif';
         ctx.fillText(`${numero(V1[3], 2)} m`, 350, 50);
@@ -155,13 +179,7 @@ function Resultados({ e, desenho, onVoltar }: { e: Entrada; desenho: React.RefOb
                 <Destaque><span>Calhas de coleta</span><strong>{numero(V2[3], 0)} <small>× {numero(V2[2], 2)} m</small></strong></Destaque>
             </Destaques>
 
-            <Bloco>
-                <TituloBloco>Baixar</TituloBloco>
-                <Botoes>
-                    <BotaoSecundario type="button" onClick={() => relatorioDecantacao(e.q, e.vs, e.ns, e.prof, desenho.current)}>Relatório (PDF)</BotaoSecundario>
-                    <BotaoSecundario type="button" onClick={() => baixarPng(desenho.current, 'Decantação.png')}>Desenho (PNG)</BotaoSecundario>
-                </Botoes>
-            </Bloco>
+            <BaixarRelatorio montar={montar} />
 
             <TituloBloco>Verificações</TituloBloco>
             <Verificacoes rotulo="Verificações do decantador" itens={itens} />

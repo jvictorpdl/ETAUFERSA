@@ -10,7 +10,7 @@ convencional:
 - **Decantação**: decantador convencional de escoamento horizontal
 - **Filtração**: filtro rápido de dupla camada (areia e antracito)
 
-Cada tela gera um relatório em PDF e um desenho com as dimensões.
+Cada tela mostra as verificações da NBR 12216 e deixa baixar o relatório com todos os valores fornecidos e calculados em PDF, Word, Excel ou CSV, além do desenho com as dimensões (PNG), como no Calimpe-H20.
 
 ## Rodar no computador
 

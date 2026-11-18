@@ -4,19 +4,20 @@ import Layout from '../../components/ui/Layout';
 import Calculadora from '../../components/ui/Calculadora';
 import { Campo, CampoSelecao } from '../../components/ui/Campo';
 import { ItemAjuda, PainelAjuda } from '../../components/ui/Ajuda';
-import Desenho, { baixarPng } from '../../components/ui/Desenho';
+import Desenho, { capturarDesenho } from '../../components/ui/Desenho';
+import BaixarRelatorio from '../../components/ui/BaixarRelatorio';
+import { linha, Relatorio } from '../../relatorio/modelo';
 import Verificacoes from '../../components/ui/Verificacoes';
 import useDados from '../../components/ui/useDados';
 import { lerNumero, numero } from '../../components/ui/formato';
 import {
-    ActionButton, Aviso, BarraAcoes, Bloco, Botoes, BotaoSecundario, CaixaTabela, CancelButton, Column, Conclusao,
+    ActionButton, Aviso, BarraAcoes, CaixaTabela, CancelButton, Column, Conclusao,
     Destaque, Destaques, FormTitle, Grid, MensagemErro, Paragrafo, Row, Secao, Tabela, TituloBloco, VerticalSplitter,
 } from '../../components/ui/estilos';
 import img3 from '../../assets/images/exemploFloc3.png';
 import img4 from '../../assets/images/exemploFloc.png';
 import img5 from '../../assets/images/exemploFloc5.png';
 import { calcularFloc, EntradaFloc, ResultadoFloc } from './calculo';
-import { relatorioFloculacao } from './relatorio';
 
 const GRUPOS = ['Dados do floculador', 'Gradientes', 'Resultados'];
 
@@ -199,6 +200,55 @@ function Resultados({ e, desenho, onVoltar }: { e: EntradaFloc; desenho: React.R
         setFator(f);
     }
 
+    const tabelaCamaras = (M: number[][], titulo: string) => ({
+        titulo,
+        colunas: ['Câmara', ...COLUNAS],
+        linhas: Array.from({ length: e.nc }, (_, i) => [i + 1, ...M.map((col) => col[i])]),
+        casas: [0, ...CASAS],
+    });
+
+    const montar = (): Relatorio => ({
+        titulo: 'Floculação',
+        descricao: 'Floculador hidráulico de chicanas com fluxo vertical, com câmaras de gradiente decrescente',
+        conclusao: {
+            titulo: aindaAcima ? 'G acima de 70 s⁻¹ em alguma câmara' : atende ? 'O floculador atende aos critérios da NBR 12216' : 'O floculador não atende a todos os critérios da NBR 12216',
+            atende,
+            linhas: [`${e.nc} câmaras, ${numero(base.vol, 0)} m³ por unidade, G de ${numero(final[7][0], 1)} a ${numero(final[7][e.nc - 1], 1)} s⁻¹.`,
+                ...(fator !== null ? [`Fator de correção aplicado: ${numero(fator, 1)} %.`] : [])],
+        },
+        fornecidos: [
+            {
+                titulo: 'Dados do floculador',
+                linhas: [
+                    linha('Q', 'vazão total da ETA', e.q, 'm³/s', 4),
+                    linha('t', 'tempo de floculação', e.t, 'min', 1),
+                    linha('Nc', 'número de câmaras', e.nc, '', 0),
+                    linha('H', 'profundidade', e.prof, 'm', 2),
+                    linha('Nd', 'número de unidades', e.nd, '', 0),
+                    linha('L', 'largura', e.l, 'm', 2),
+                    ...(fator !== null ? [linha('FC', 'fator de correção do G', fator, '%', 1)] : []),
+                ],
+            },
+            { titulo: 'Gradiente desejado em cada câmara', linhas: e.G.map((g, i) => linha(`G${i + 1}`, `câmara ${i + 1}`, g, 's⁻¹', 1)) },
+        ],
+        calculados: [{
+            titulo: 'Floculador (por unidade)',
+            linhas: [
+                linha('q', 'vazão por unidade', base.q, 'm³/s', 4),
+                linha('V', 'volume', base.vol, 'm³', 1),
+                linha('A', 'área superficial', base.area, 'm²', 2),
+                linha('B', 'área / largura', base.B, 'm', 3),
+                linha('a', 'B / número de câmaras', base.a, 'm', 3),
+            ],
+        }],
+        verificacoes,
+        tabelas: [
+            tabelaCamaras(base.original, corrigido ? 'Câmaras sem correção' : 'Câmaras'),
+            ...(corrigido ? [tabelaCamaras(corrigido, `Câmaras com fator de ${numero(fator ?? 0, 1)} %`)] : []),
+        ],
+        desenho: capturarDesenho(desenho.current, 650, 450),
+    });
+
     function desenhar(ctx: CanvasRenderingContext2D) {
         const esp = final[1];
         const a = numero(base.a, 3);
@@ -256,13 +306,7 @@ function Resultados({ e, desenho, onVoltar }: { e: EntradaFloc; desenho: React.R
                 <Destaque><span>a (B / nº de câmaras)</span><strong>{numero(base.a, 2)} <small>m</small></strong></Destaque>
             </Destaques>
 
-            <Bloco>
-                <TituloBloco>Baixar</TituloBloco>
-                <Botoes>
-                    <BotaoSecundario type="button" onClick={() => relatorioFloculacao(e, { ...base, corrigida: corrigido }, fator, desenho.current)}>Relatório (PDF)</BotaoSecundario>
-                    <BotaoSecundario type="button" onClick={() => baixarPng(desenho.current, 'Floculação.png')}>Desenho (PNG)</BotaoSecundario>
-                </Botoes>
-            </Bloco>
+            <BaixarRelatorio montar={montar} />
 
             <TituloBloco>Verificações da NBR 12216</TituloBloco>
             <Verificacoes rotulo="Verificações da NBR 12216" itens={verificacoes} />

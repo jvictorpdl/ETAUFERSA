@@ -59,6 +59,10 @@ const Desenho = forwardRef<HTMLCanvasElement, Props>(({ imagem, largura, altura,
 
 export default Desenho;
 
+export function capturarDesenho(canvas: HTMLCanvasElement | null, largura: number, altura: number) {
+    return canvas ? { imagem: canvas.toDataURL('image/png'), largura, altura } : undefined;
+}
+
 export function baixarPng(canvas: HTMLCanvasElement | null, nome: string) {
     if (!canvas) return;
     const a = document.createElement('a');

@@ -5,17 +5,18 @@ import Layout from '../../components/ui/Layout';
 import Calculadora from '../../components/ui/Calculadora';
 import { Campo, CampoSelecao } from '../../components/ui/Campo';
 import { ItemAjuda, PainelAjuda } from '../../components/ui/Ajuda';
-import Desenho, { baixarPng } from '../../components/ui/Desenho';
+import Desenho, { capturarDesenho } from '../../components/ui/Desenho';
+import BaixarRelatorio from '../../components/ui/BaixarRelatorio';
+import { linha, Relatorio } from '../../relatorio/modelo';
 import Verificacoes from '../../components/ui/Verificacoes';
 import useDados from '../../components/ui/useDados';
 import { lerNumero, numero } from '../../components/ui/formato';
 import {
-    ActionButton, Aviso, BarraAcoes, Bloco, Botoes, BotaoSecundario, CaixaTabela, CancelButton, Column, Conclusao,
+    ActionButton, Aviso, BarraAcoes, CaixaTabela, CancelButton, Column, Conclusao,
     Descricao, Destaque, Destaques, FormTitle, Grid, MensagemErro, Paragrafo, Row, Secao, Tabela, TituloBloco, Unidade, VerticalSplitter,
 } from '../../components/ui/estilos';
 import imgModelo from '../../assets/images/exemploCalha.png';
 import imgDesenho from '../../assets/images/exemploCoag.png';
-import { relatorioCoagulacao } from './relatorio';
 
 // Calhas Parshall na ordem da tabela de Coag.valoresParshal, com a faixa de vazão (m³/s)
 const CALHAS = [
@@ -192,6 +193,29 @@ function Resultados({ q, opcao, desenho, onVoltar }: { q: number; opcao: number;
         ['G', 'gradiente de velocidade', 's⁻¹', O[6], 0],
     ];
 
+    const titulo = semSolucao ? 'O método do ressalto não tem solução com esta vazão'
+        : foraDaCalha ? 'O ressalto não se forma dentro da calha'
+            : atende ? 'A calha atende à NBR 12216 como misturador rápido' : 'A calha não atende a todos os critérios da NBR 12216';
+
+    // relatório com tudo o que foi digitado e calculado, para PDF, Word, Excel e CSV
+    const montar = (): Relatorio => ({
+        titulo: 'Coagulação',
+        descricao: 'Calha Parshall como misturador rápido: ressalto hidráulico, tempo de mistura e gradiente de velocidade',
+        conclusao: {
+            titulo,
+            atende,
+            linhas: [`Calha W ${calha.w} cm (${calha.pol}) com Q = ${numero(q, 4)} m³/s: G = ${numero(O[6], 0)} s⁻¹ em ${numero(O[5], 2)} s.`],
+        },
+        fornecidos: [
+            { titulo: 'Dados da calha', linhas: [linha('W', `largura da garganta da calha ${calha.pol}`, v[0], 'm', 3), linha('Q', 'vazão', q, 'm³/s', 4)] },
+            { titulo: 'Dimensões da calha (tabela)', linhas: COLUNAS_CALHA.map((c, i) => linha(c.s, c.d, v[i], c.u, 3)) },
+        ],
+        calculados: [{ titulo: 'Ressalto hidráulico', linhas: linhas.map(([s, d, u, x, c]) => linha(s, d, x, u, c)) }],
+        verificacoes: verificacoes,
+        tabelas: [],
+        desenho: capturarDesenho(desenho.current, 550, 350),
+    });
+
     function desenhar(ctx: CanvasRenderingContext2D) {
         ctx.font = '16px Inter, sans-serif';
         ctx.fillText(numero(v[0], 2), 320, 75);
@@ -239,13 +263,7 @@ function Resultados({ q, opcao, desenho, onVoltar }: { q: number; opcao: number;
                     <Destaque><span>Lâmina na medição (h0)</span><strong>{numero(H[0], 3)} <small>m</small></strong></Destaque>
                 </Destaques>
 
-                <Bloco>
-                    <TituloBloco>Baixar</TituloBloco>
-                    <Botoes>
-                        <BotaoSecundario type="button" onClick={() => relatorioCoagulacao(q, v, V, H, O, desenho.current)}>Relatório (PDF)</BotaoSecundario>
-                        <BotaoSecundario type="button" onClick={() => baixarPng(desenho.current, 'Coagulação.png')}>Desenho (PNG)</BotaoSecundario>
-                    </Botoes>
-                </Bloco>
+                <BaixarRelatorio montar={montar} />
 
                 {verificacoes.length > 0 && <>
                     <TituloBloco>Verificações da NBR 12216</TituloBloco>

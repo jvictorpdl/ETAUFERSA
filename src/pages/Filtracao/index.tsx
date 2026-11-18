@@ -4,17 +4,18 @@ import Layout from '../../components/ui/Layout';
 import Calculadora from '../../components/ui/Calculadora';
 import { Campo } from '../../components/ui/Campo';
 import { ItemAjuda, PainelAjuda } from '../../components/ui/Ajuda';
-import Desenho, { baixarPng } from '../../components/ui/Desenho';
+import Desenho, { capturarDesenho } from '../../components/ui/Desenho';
+import BaixarRelatorio from '../../components/ui/BaixarRelatorio';
+import { linha, Relatorio } from '../../relatorio/modelo';
 import Verificacoes, { Verificacao } from '../../components/ui/Verificacoes';
 import useDados from '../../components/ui/useDados';
 import { lerNumero, numero } from '../../components/ui/formato';
 import {
-    ActionButton, BarraAcoes, Bloco, Botoes, BotaoSecundario, CaixaTabela, CancelButton, Column, Conclusao,
+    ActionButton, BarraAcoes, CaixaTabela, CancelButton, Column, Conclusao,
     Descricao, Destaque, Destaques, FormTitle, Grid, MensagemErro, Paragrafo, Row, Secao, Tabela, TituloBloco, Unidade, VerticalSplitter,
 } from '../../components/ui/estilos';
 import imgDesenho from '../../assets/images/exemploFilt.png';
 import { calcularFiltr, EntradaFiltr } from './calculo';
-import { relatorioFiltracao } from './relatorio';
 
 interface Def { nome: string; rotulo: string; unidade?: string; dica: string; inteiro?: boolean }
 
@@ -221,6 +222,58 @@ function Resultados({ e, desenho, onVoltar }: { e: EntradaFiltr; desenho: React.
         ['Vmf do leito misto', 'm/s', r.vmf.misto, 4],
     ];
 
+    const meio = (nome: string, m: EntradaFiltr['areia']) => ({
+        titulo: nome,
+        linhas: [
+            linha('L', 'espessura', m.altura, 'm', 2),
+            linha('def', 'tamanho efetivo', m.def, 'mm', 2),
+            linha('CU', 'coeficiente de uniformidade', m.cu, '', 2),
+            linha('ρs', 'massa específica', m.massa, 'kg/m³', 0),
+            linha('ε', 'porosidade', m.porosidade, '', 2),
+            linha('ψ', 'coeficiente de esfericidade', m.esfericidade, '', 2),
+            linha('d10', 'diâmetro de 10 %', m.d10, 'mm', 2),
+        ],
+    });
+    const montar = (): Relatorio => ({
+        titulo: 'Filtração',
+        descricao: 'Filtro rápido de camada dupla (areia e antracito): área, lavagem, calhas, perdas de carga e fluidificação',
+        conclusao: {
+            titulo: atende ? 'O filtro atende aos critérios verificados' : 'O filtro não atende a todos os critérios',
+            atende,
+            linhas: [`${numero(r.filtros.numero, 0)} filtros de ${numero(r.filtros.area, 1)} m² (${numero(r.filtros.L, 2)} m × ${numero(r.filtros.Y, 2)} m) a ${numero(e.taxa, 0)} m³/m²·dia.`],
+        },
+        fornecidos: [
+            {
+                titulo: 'Dados gerais',
+                linhas: [
+                    linha('Q', 'vazão total da ETA', e.q, 'm³/s', 4),
+                    linha('Tf', 'taxa de filtração', e.taxa, 'm³/m²·dia', 1),
+                    linha('Nd', 'número de decantadores', e.nd, '', 0),
+                    linha('Ld', 'largura do decantador', e.ldec, 'm', 2),
+                    linha('Lc', 'largura da calha de lavagem', e.lcalha, 'm', 2),
+                    linha('Nc', 'número de calhas', e.ncalhas, '', 0),
+                    linha('qar', 'taxa de ar', e.ar, 'L/s·m²', 2),
+                ],
+            },
+            meio('Areia', e.areia),
+            meio('Antracito', e.antracito),
+            {
+                titulo: 'Camada suporte',
+                linhas: [
+                    linha('L', 'espessura', e.suporte.altura, 'm', 2),
+                    linha('ε', 'porosidade', e.suporte.porosidade, '', 2),
+                    linha('ψ', 'coeficiente de esfericidade', e.suporte.esfericidade, '', 2),
+                    linha('d10', 'diâmetro de 10 %', e.suporte.d10, 'mm', 2),
+                    linha('d90', 'diâmetro de 90 %', e.suporte.d90, 'mm', 2),
+                ],
+            },
+        ],
+        calculados: [{ titulo: 'Filtro', linhas: linhas.map(([d, u, x, c, obs]) => linha(d, obs ?? '', x, u, c)) }],
+        verificacoes: itens,
+        tabelas: [],
+        desenho: capturarDesenho(desenho.current, 650, 450),
+    });
+
     function desenhar(ctx: CanvasRenderingContext2D) {
         ctx.font = '12px Inter, sans-serif';
         ctx.fillText(`${numero(r.lavagem.tubulacao, 0)} mm`, 570, 59);
@@ -252,13 +305,7 @@ function Resultados({ e, desenho, onVoltar }: { e: EntradaFiltr; desenho: React.
                 <Destaque><span>Água de lavagem</span><strong>{numero(r.lavagem.vazao, 2)} <small>m³/s</small></strong></Destaque>
             </Destaques>
 
-            <Bloco>
-                <TituloBloco>Baixar</TituloBloco>
-                <Botoes>
-                    <BotaoSecundario type="button" onClick={() => relatorioFiltracao(e, r, desenho.current)}>Relatório (PDF)</BotaoSecundario>
-                    <BotaoSecundario type="button" onClick={() => baixarPng(desenho.current, 'Filtração.png')}>Desenho (PNG)</BotaoSecundario>
-                </Botoes>
-            </Bloco>
+            <BaixarRelatorio montar={montar} />
 
             <TituloBloco>Verificações</TituloBloco>
             <Verificacoes rotulo="Verificações do filtro" itens={itens} />
