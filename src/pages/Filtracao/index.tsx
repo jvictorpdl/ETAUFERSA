@@ -9,13 +9,15 @@ import BaixarRelatorio from '../../components/ui/BaixarRelatorio';
 import { linha, Relatorio } from '../../relatorio/modelo';
 import Verificacoes, { Verificacao } from '../../components/ui/Verificacoes';
 import useDados from '../../components/ui/useDados';
+import useErros, { ListaErros } from '../../components/ui/useErros';
+import { validarFiltracao } from '../../Utils/validacao';
 import { lerNumero, numero } from '../../components/ui/formato';
 import {
     ActionButton, BarraAcoes, CaixaTabela, CancelButton, Column, Conclusao,
-    Descricao, Destaque, Destaques, FormTitle, Grid, MensagemErro, Paragrafo, Row, Secao, Tabela, TituloBloco, Unidade, VerticalSplitter,
+    Descricao, Destaque, Destaques, FormTitle, Grid, Paragrafo, Row, Secao, Tabela, TituloBloco, Unidade, VerticalSplitter,
 } from '../../components/ui/estilos';
 import imgDesenho from '../../assets/images/exemploFilt.png';
-import { calcularFiltr, EntradaFiltr } from './calculo';
+import { calcularFiltr, criteriosProjetoFiltro, EntradaFiltr } from './calculo';
 
 interface Def { nome: string; rotulo: string; unidade?: string; dica: string; inteiro?: boolean }
 
@@ -26,7 +28,7 @@ const GERAIS: Def[] = [
     { nome: 'ldec', rotulo: 'Largura do decantador', unidade: 'm', dica: 'Os filtros ficam lado a lado na largura do decantador; define a dimensão L do filtro.' },
     { nome: 'lcalha', rotulo: 'Largura da calha de lavagem', unidade: 'm', dica: 'Largura total ocupada pelas calhas de coleta da água de lavagem.' },
     { nome: 'ncalhas', rotulo: 'Nº de calhas', dica: 'Calhas de coleta da água de lavagem em cada filtro (pelo menos 2).', inteiro: true },
-    { nome: 'ar', rotulo: 'Taxa de ar', unidade: 'L/s·m²', dica: 'Vazão de ar por metro quadrado de filtro na lavagem com ar.' },
+    { nome: 'ar', rotulo: 'Taxa de ar', unidade: 'L/s·m²', dica: 'Vazão de ar por metro quadrado de filtro na lavagem com ar; 0 se a lavagem é só com água.' },
 ];
 
 const MEIO: Def[] = [
@@ -57,37 +59,34 @@ const todas = [
 const VAZIO = Object.fromEntries(todas.map((k) => [k, ''])) as Record<string, string>;
 
 const GRUPOS = ['Dados gerais', 'Meio filtrante', 'Camada suporte', 'Resultados'];
-const CAMPOS_DO_GRUPO: Record<string, string[]> = {
-    'Dados gerais': GERAIS.map((d) => chave('geral', d.nome)),
-    'Meio filtrante': [...MEIO.map((d) => chave('areia', d.nome)), ...MEIO.map((d) => chave('antracito', d.nome))],
-    'Camada suporte': SUPORTE.map((d) => chave('suporte', d.nome)),
+
+// exemplo didático: filtro de camada dupla dentro dos limites da NBR 12216
+const EXEMPLO: Record<string, string> = {
+    'geral.q': '0,3', 'geral.taxa': '240', 'geral.nd': '2', 'geral.ldec': '10', 'geral.lcalha': '1', 'geral.ncalhas': '3', 'geral.ar': '15',
+    'areia.altura': '0,3', 'areia.def': '0,55', 'areia.cu': '1,4', 'areia.massa': '2650', 'areia.porosidade': '0,42', 'areia.esfericidade': '0,8', 'areia.d10': '0,45',
+    'antracito.altura': '0,5', 'antracito.def': '1', 'antracito.cu': '1,4', 'antracito.massa': '1400', 'antracito.porosidade': '0,5', 'antracito.esfericidade': '0,7', 'antracito.d10': '0,9',
+    'suporte.altura': '0,4', 'suporte.porosidade': '0,4', 'suporte.esfericidade': '0,8', 'suporte.d10': '3', 'suporte.d90': '25',
 };
-const INTEIROS = GERAIS.filter((d) => d.inteiro).map((d) => chave('geral', d.nome));
 
 export default function Filtracao() {
-    const { dados, alterar, limpar, temDados } = useDados('filtracao', VAZIO);
+    const { dados, alterar, limpar, preencher, temDados } = useDados('filtracao', VAZIO);
     const [grupo, setGrupo] = useState(GRUPOS[0]);
     const [entrada, setEntrada] = useState<EntradaFiltr | null>(null);
-    const [invalidos, setInvalidos] = useState<string[]>([]);
+    const { erros, definir, invalido, editado } = useErros();
     const desenho = useRef<HTMLCanvasElement>(null);
 
-    const ruinsDe = (campos: string[]) => campos.filter((k) => {
-        const x = lerNumero(dados[k]);
-        return !Number.isFinite(x) || x <= 0 || (INTEIROS.includes(k) && !Number.isInteger(x));
-    });
-
     function avancar() {
-        const ruins = ruinsDe(CAMPOS_DO_GRUPO[grupo]);
-        setInvalidos(ruins);
-        if (ruins.length) return;
+        const encontrados = validarFiltracao(dados, grupo);
+        definir(encontrados);
+        if (encontrados.length) return;
         if (grupo !== 'Camada suporte') {
             setGrupo(GRUPOS[GRUPOS.indexOf(grupo) + 1]);
             return;
         }
         // antes de calcular confere todos os grupos e abre o primeiro com problema
-        const primeiro = ['Dados gerais', 'Meio filtrante'].find((g) => ruinsDe(CAMPOS_DO_GRUPO[g]).length);
+        const primeiro = ['Dados gerais', 'Meio filtrante'].find((g) => validarFiltracao(dados, g).length);
         if (primeiro) {
-            setInvalidos(ruinsDe(CAMPOS_DO_GRUPO[primeiro]));
+            definir(validarFiltracao(dados, primeiro));
             setGrupo(primeiro);
             return;
         }
@@ -107,8 +106,8 @@ export default function Filtracao() {
     const campo = (g: string, d: Def) => {
         const k = chave(g, d.nome);
         return (
-            <Campo key={k} rotulo={d.rotulo} nome={k} unidade={d.unidade} dica={d.dica} valor={dados[k]} invalido={invalidos.includes(k)}
-                onChange={(v) => { alterar(k, v); setInvalidos(invalidos.filter((x) => x !== k)); }} />
+            <Campo key={k} rotulo={d.rotulo} nome={k} unidade={d.unidade} dica={d.dica} valor={dados[k]} invalido={invalido(k)}
+                onChange={(v) => { alterar(k, v); editado(k); }} />
         );
     };
 
@@ -133,12 +132,12 @@ export default function Filtracao() {
                 grupos={GRUPOS}
                 grupo={grupo}
                 bloqueados={entrada ? [] : ['Resultados']}
-                onGrupo={(g) => { setInvalidos([]); setGrupo(g); }}
-                onLimpar={temDados ? () => { limpar(); setEntrada(null); setInvalidos([]); setGrupo(GRUPOS[0]); } : undefined}
+                onGrupo={(g) => { definir([]); setGrupo(g); }}
+                onLimpar={temDados ? () => { limpar(); setEntrada(null); definir([]); setGrupo(GRUPOS[0]); } : undefined}
+                onExemplo={() => { preencher(EXEMPLO); definir([]); }}
             >
                 {grupo !== 'Resultados' && <>
-                    {invalidos.length > 0 &&
-                        <MensagemErro role="alert">Preencha os campos destacados com números maiores que zero (números de decantadores e de calhas são inteiros).</MensagemErro>}
+                    <ListaErros erros={erros} />
                     <Row>
                         <Column>
                             {grupo === 'Dados gerais' &&
@@ -168,7 +167,7 @@ export default function Filtracao() {
                     <BarraAcoes>
                         {grupo === GRUPOS[0]
                             ? <span />
-                            : <CancelButton type="button" onClick={() => { setInvalidos([]); setGrupo(GRUPOS[GRUPOS.indexOf(grupo) - 1]); }}>Voltar</CancelButton>}
+                            : <CancelButton type="button" onClick={() => { definir([]); setGrupo(GRUPOS[GRUPOS.indexOf(grupo) - 1]); }}>Voltar</CancelButton>}
                         <ActionButton type="button" onClick={avancar}>{grupo === 'Camada suporte' ? 'Dimensionar' : 'Próximo'}</ActionButton>
                     </BarraAcoes>
                 </>}
@@ -183,16 +182,7 @@ function Resultados({ e, desenho, onVoltar }: { e: EntradaFiltr; desenho: React.
     const r = calcularFiltr(e);
     const itens: Verificacao[] = [
         ...criteriosFiltracao(e.taxa, e.areia, e.antracito),
-        {
-            ok: r.calhas.S >= r.calhas.sMin && r.calhas.S <= r.calhas.sMax,
-            texto: `Espaçamento entre calhas S = ${numero(r.calhas.S, 2)} m`,
-            detalhe: `Critério de projeto: entre 1,5 e 2,5 vezes a altura das calhas sobre o leito (${numero(r.calhas.sMin, 2)} a ${numero(r.calhas.sMax, 2)} m)`,
-        },
-        {
-            ok: r.ld >= 1000,
-            texto: `Relação espessura/diâmetro do meio (L/d) = ${numero(r.ld, 0)}`,
-            detalhe: 'Critério de projeto: pelo menos 1.000',
-        },
+        ...criteriosProjetoFiltro(r),
     ];
     const atende = itens.every((i) => i.ok);
 

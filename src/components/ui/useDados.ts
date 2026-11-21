@@ -22,6 +22,7 @@ export default function useDados<T extends Record<string, string>>(chave: string
 
     const alterar = (campo: keyof T, valor: string) => setDados((d) => ({ ...d, [campo]: valor }));
     const limpar = () => setDados(inicial);
+    const preencher = (valores: Partial<T>) => setDados({ ...inicial, ...valores });
     const temDados = Object.keys(inicial).some((k) => dados[k] !== inicial[k]);
-    return { dados, alterar, limpar, temDados };
+    return { dados, alterar, limpar, preencher, temDados };
 }

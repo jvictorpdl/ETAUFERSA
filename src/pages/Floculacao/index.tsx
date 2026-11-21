@@ -9,10 +9,12 @@ import BaixarRelatorio from '../../components/ui/BaixarRelatorio';
 import { linha, Relatorio } from '../../relatorio/modelo';
 import Verificacoes from '../../components/ui/Verificacoes';
 import useDados from '../../components/ui/useDados';
+import useErros, { ListaErros } from '../../components/ui/useErros';
+import { REGRAS_FLOCULACAO_DADOS, regrasGradientes, validarCampos } from '../../Utils/validacao';
 import { lerNumero, numero } from '../../components/ui/formato';
 import {
     ActionButton, Aviso, BarraAcoes, CaixaTabela, CancelButton, Column, Conclusao,
-    Destaque, Destaques, FormTitle, Grid, MensagemErro, Paragrafo, Row, Secao, Tabela, TituloBloco, VerticalSplitter,
+    Destaque, Destaques, FormTitle, Grid, Paragrafo, Row, Secao, Tabela, TituloBloco, VerticalSplitter,
 } from '../../components/ui/estilos';
 import img3 from '../../assets/images/exemploFloc3.png';
 import img4 from '../../assets/images/exemploFloc.png';
@@ -31,32 +33,31 @@ const CAMPOS = [
 
 type Dados = { q: string; t: string; nc: string; prof: string; nd: string; l: string; g1: string; g2: string; g3: string; g4: string; g5: string };
 const VAZIO: Dados = { q: '', t: '', nc: '3', prof: '', nd: '', l: '', g1: '', g2: '', g3: '', g4: '', g5: '' };
+// exemplo didático: G decrescente em 4 câmaras, com a primeira abaixo de 70 s⁻¹
+const EXEMPLO: Partial<Dados> = { q: '0,3', t: '25', nc: '4', prof: '4', nd: '2', l: '5', g1: '60', g2: '45', g3: '30', g4: '20' };
 const COLUNAS = ['n', 'e (m)', 'V₁ (m/s)', 'V₂ (m/s)', 'Δhd (m)', 'Δhl (m)', 'Δht (m)', 'G (s⁻¹)'];
 const CASAS = [0, 3, 3, 3, 4, 4, 4, 1];
 
 export default function Floculacao() {
-    const { dados, alterar, limpar, temDados } = useDados<Dados>('floculacao', VAZIO);
+    const { dados, alterar, limpar, preencher, temDados } = useDados<Dados>('floculacao', VAZIO);
     const [grupo, setGrupo] = useState(GRUPOS[0]);
     const [entrada, setEntrada] = useState<EntradaFloc | null>(null);
-    const [invalidos, setInvalidos] = useState<string[]>([]);
+    const { erros, definir, invalido, editado } = useErros();
     const desenho = useRef<HTMLCanvasElement>(null);
     const nc = Number(dados.nc);
     const gNomes = ['g1', 'g2', 'g3', 'g4', 'g5'].slice(0, nc) as Array<keyof Dados>;
 
     function validarDados() {
-        const ruins = CAMPOS.filter((c) => {
-            const x = lerNumero(dados[c.nome]);
-            return !Number.isFinite(x) || x <= 0 || (c.inteiro && !Number.isInteger(x));
-        }).map((c) => c.nome as string);
-        setInvalidos(ruins);
-        return ruins.length === 0;
+        const encontrados = validarCampos(dados, REGRAS_FLOCULACAO_DADOS);
+        definir(encontrados);
+        return encontrados.length === 0;
     }
 
     function dimensionar() {
         if (!validarDados()) { setGrupo(GRUPOS[0]); return; }
-        const ruins = gNomes.filter((g) => !(lerNumero(dados[g]) > 0)) as string[];
-        setInvalidos(ruins);
-        if (ruins.length) return;
+        const encontrados = validarCampos(dados, regrasGradientes(nc));
+        definir(encontrados);
+        if (encontrados.length) return;
         setEntrada({
             q: lerNumero(dados.q), t: lerNumero(dados.t), nc, prof: lerNumero(dados.prof), nd: lerNumero(dados.nd), l: lerNumero(dados.l),
             G: gNomes.map((g) => lerNumero(dados[g])),
@@ -64,7 +65,7 @@ export default function Floculacao() {
         setGrupo('Resultados');
     }
 
-    const mudar = (campo: keyof Dados, v: string) => { alterar(campo, v); setInvalidos(invalidos.filter((x) => x !== campo)); };
+    const mudar = (campo: keyof Dados, v: string) => { alterar(campo, v); editado(campo); };
 
     return (
         <Layout unidade="Floculação">
@@ -75,10 +76,10 @@ export default function Floculacao() {
                 grupo={grupo}
                 bloqueados={entrada ? [] : ['Resultados']}
                 onGrupo={setGrupo}
-                onLimpar={temDados ? () => { limpar(); setEntrada(null); setInvalidos([]); setGrupo(GRUPOS[0]); } : undefined}
+                onLimpar={temDados ? () => { limpar(); setEntrada(null); definir([]); setGrupo(GRUPOS[0]); } : undefined}
+                onExemplo={() => { preencher(EXEMPLO); definir([]); }}
             >
-                {grupo !== 'Resultados' && invalidos.length > 0 &&
-                    <MensagemErro role="alert">Preencha os campos destacados com números maiores que zero (o número de unidades é inteiro).</MensagemErro>}
+                {grupo !== 'Resultados' && <ListaErros erros={erros} />}
 
                 {grupo === GRUPOS[0] && <>
                     <Row>
@@ -88,7 +89,7 @@ export default function Floculacao() {
                                 <Grid $colunas={3}>
                                     {CAMPOS.map((c) => (
                                         <Campo key={c.nome} rotulo={c.rotulo} nome={c.nome} unidade={c.unidade || undefined} dica={c.dica}
-                                            valor={dados[c.nome]} invalido={invalidos.includes(c.nome)} onChange={(v) => mudar(c.nome, v)} />
+                                            valor={dados[c.nome]} invalido={invalido(c.nome)} onChange={(v) => mudar(c.nome, v)} />
                                     ))}
                                     <CampoSelecao rotulo="Nº de câmaras" nome="nc" valor={dados.nc}
                                         dica="Câmaras em série, cada uma com seu gradiente de velocidade."
@@ -123,7 +124,7 @@ export default function Floculacao() {
                                 <FormTitle>Gradiente de velocidade de cada câmara</FormTitle>
                                 <Grid $colunas={nc}>
                                     {gNomes.map((g, i) => (
-                                        <Campo key={g} rotulo={`G${i + 1}`} nome={g} unidade="s⁻¹" valor={dados[g]} invalido={invalidos.includes(g)}
+                                        <Campo key={g} rotulo={`G${i + 1}`} nome={g} unidade="s⁻¹" valor={dados[g]} invalido={invalido(g)}
                                             dica={`Gradiente de velocidade desejado na câmara ${i + 1}.`} onChange={(v) => mudar(g, v)} />
                                     ))}
                                 </Grid>

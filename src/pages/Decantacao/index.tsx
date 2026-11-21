@@ -9,16 +9,21 @@ import BaixarRelatorio from '../../components/ui/BaixarRelatorio';
 import { linha, Relatorio } from '../../relatorio/modelo';
 import Verificacoes, { Verificacao } from '../../components/ui/Verificacoes';
 import useDados from '../../components/ui/useDados';
+import useErros, { ListaErros } from '../../components/ui/useErros';
+import { REGRAS_DECANTACAO, validarCampos } from '../../Utils/validacao';
 import { lerNumero, numero } from '../../components/ui/formato';
 import {
     ActionButton, BarraAcoes, CaixaTabela, CancelButton, Column, Conclusao,
-    Descricao, Destaque, Destaques, FormTitle, Grid, MensagemErro, Paragrafo, Row, Secao, Tabela, TituloBloco, Unidade, VerticalSplitter,
+    Descricao, Destaque, Destaques, FormTitle, Grid, Paragrafo, Row, Secao, Tabela, TituloBloco, Unidade, VerticalSplitter,
 } from '../../components/ui/estilos';
 import img3 from '../../assets/images/dec3.png';
 import img4 from '../../assets/images/dec4.png';
 import img5 from '../../assets/images/dec5.png';
 
 const GRUPOS = ['Dados do decantador', 'Resultados'];
+
+// exemplo didático: ETA de 25.920 m³/dia com dois decantadores
+const EXEMPLO = { q: '0,3', vs: '40', ns: '2', prof: '4,5' };
 
 const CAMPOS = [
     { nome: 'q', rotulo: 'Q', unidade: 'm³/s', dica: 'Vazão total da ETA.', inteiro: false },
@@ -30,23 +35,17 @@ const CAMPOS = [
 type Entrada = { q: number; vs: number; ns: number; prof: number };
 
 export default function Decantacao() {
-    const { dados, alterar, limpar, temDados } = useDados('decantacao', { q: '', vs: '', ns: '', prof: '' });
+    const { dados, alterar, limpar, preencher, temDados } = useDados('decantacao', { q: '', vs: '', ns: '', prof: '' });
     const [grupo, setGrupo] = useState(GRUPOS[0]);
     const [calculo, setCalculo] = useState<Entrada | null>(null);
-    const [invalidos, setInvalidos] = useState<string[]>([]);
+    const { erros, definir, invalido, editado } = useErros();
     const desenho = useRef<HTMLCanvasElement>(null);
 
     function dimensionar() {
-        const valores: Record<string, number> = {};
-        const ruins: string[] = [];
-        CAMPOS.forEach((c) => {
-            const x = lerNumero(dados[c.nome]);
-            if (!Number.isFinite(x) || x <= 0 || (c.inteiro && !Number.isInteger(x))) ruins.push(c.nome);
-            valores[c.nome] = x;
-        });
-        setInvalidos(ruins);
-        if (ruins.length) return;
-        setCalculo(valores as Entrada);
+        const encontrados = validarCampos(dados, REGRAS_DECANTACAO);
+        definir(encontrados);
+        if (encontrados.length) return;
+        setCalculo({ q: lerNumero(dados.q), vs: lerNumero(dados.vs), ns: lerNumero(dados.ns), prof: lerNumero(dados.prof) });
         setGrupo('Resultados');
     }
 
@@ -59,13 +58,11 @@ export default function Decantacao() {
                 grupo={grupo}
                 bloqueados={calculo ? [] : ['Resultados']}
                 onGrupo={setGrupo}
-                onLimpar={temDados ? () => { limpar(); setCalculo(null); setInvalidos([]); setGrupo(GRUPOS[0]); } : undefined}
+                onLimpar={temDados ? () => { limpar(); setCalculo(null); definir([]); setGrupo(GRUPOS[0]); } : undefined}
+                onExemplo={() => { preencher(EXEMPLO); definir([]); }}
             >
                 {grupo === GRUPOS[0] && <>
-                    {invalidos.length > 0 &&
-                        <MensagemErro role="alert">
-                            Preencha os campos destacados com números maiores que zero{invalidos.includes('ns') ? ' (o número de unidades é inteiro)' : ''}.
-                        </MensagemErro>}
+                    <ListaErros erros={erros} />
                     <Row>
                         <Column>
                             <Secao>
@@ -73,8 +70,8 @@ export default function Decantacao() {
                                 <Grid $colunas={4}>
                                     {CAMPOS.map((c) => (
                                         <Campo key={c.nome} rotulo={c.rotulo} nome={c.nome} unidade={c.unidade || undefined} dica={c.dica}
-                                            valor={dados[c.nome]} invalido={invalidos.includes(c.nome)}
-                                            onChange={(v) => { alterar(c.nome, v); setInvalidos(invalidos.filter((x) => x !== c.nome)); }} />
+                                            valor={dados[c.nome]} invalido={invalido(c.nome)}
+                                            onChange={(v) => { alterar(c.nome, v); editado(c.nome); }} />
                                     ))}
                                 </Grid>
                             </Secao>

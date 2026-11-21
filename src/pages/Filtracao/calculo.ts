@@ -43,3 +43,28 @@ export function calcularFiltr(e: EntradaFiltr) {
 }
 
 export type ResultadoFiltr = ReturnType<typeof calcularFiltr>;
+
+// carga hidráulica disponível usada no cálculo da lâmina sobre o leito (Filtr.ts)
+export const CARGA_DISPONIVEL = 2.55;
+
+// Critérios de projeto do filtro que vêm do próprio dimensionamento
+export function criteriosProjetoFiltro(r: ResultadoFiltr) {
+    const f = (x: number, c = 2) => x.toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c });
+    return [
+        {
+            ok: r.lavagem.lamina > 0,
+            texto: `Lâmina de água sobre o leito = ${f(r.lavagem.lamina)} m`,
+            detalhe: `Critério de projeto: a perda de carga no leito limpo (${f(r.perdas.total + r.perdas.suporte)} m) precisa caber na carga disponível de ${f(CARGA_DISPONIVEL)} m`,
+        },
+        {
+            ok: r.calhas.S >= r.calhas.sMin && r.calhas.S <= r.calhas.sMax,
+            texto: `Espaçamento entre calhas S = ${f(r.calhas.S)} m`,
+            detalhe: `Critério de projeto: entre 1,5 e 2,5 vezes a altura das calhas sobre o leito (${f(r.calhas.sMin)} a ${f(r.calhas.sMax)} m)`,
+        },
+        {
+            ok: r.ld >= 1000,
+            texto: `Relação espessura/diâmetro do meio (L/d) = ${f(r.ld, 0)}`,
+            detalhe: 'Critério de projeto: pelo menos 1.000',
+        },
+    ];
+}

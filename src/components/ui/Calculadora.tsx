@@ -25,6 +25,14 @@ const BotaoLimpar = styled.button`
     }
 `;
 
+const BotaoExemplo = styled(BotaoLimpar)`
+    color: ${cores.principal};
+
+    &:hover {
+        background: ${cores.principalClaro};
+    }
+`;
+
 const Grupos = styled.div`
     display: flex;
     flex-wrap: wrap;
@@ -67,11 +75,12 @@ interface Props {
     bloqueados?: string[];
     onGrupo: (g: string) => void;
     onLimpar?: () => void;
+    onExemplo?: () => void;
     children: React.ReactNode;
 }
 
 // Moldura de cada unidade no padrão do AutoDepura: título, descrição, botões de grupo e conteúdo
-export default function Calculadora({ titulo, descricao, grupos, grupo, bloqueados = [], onGrupo, onLimpar, children }: Props) {
+export default function Calculadora({ titulo, descricao, grupos, grupo, bloqueados = [], onGrupo, onLimpar, onExemplo, children }: Props) {
     const [confirmando, setConfirmando] = useState(false);
     const topo = useRef<HTMLDivElement>(null);
 
@@ -89,6 +98,9 @@ export default function Calculadora({ titulo, descricao, grupos, grupo, bloquead
                     <PageTitle>{titulo}</PageTitle>
                     <PageSubtitle>{descricao}</PageSubtitle>
                 </div>
+                {/* com o formulário vazio dá para começar por um exemplo; com dados, só limpar */}
+                {!onLimpar && onExemplo &&
+                    <BotaoExemplo type="button" onClick={onExemplo}>Usar exemplo</BotaoExemplo>}
                 {onLimpar && (confirmando
                     ? <span>
                         <BotaoLimpar type="button" onClick={() => { setConfirmando(false); onLimpar(); }}>Confirmar limpeza</BotaoLimpar>

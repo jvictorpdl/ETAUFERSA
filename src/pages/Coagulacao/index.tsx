@@ -10,10 +10,12 @@ import BaixarRelatorio from '../../components/ui/BaixarRelatorio';
 import { linha, Relatorio } from '../../relatorio/modelo';
 import Verificacoes from '../../components/ui/Verificacoes';
 import useDados from '../../components/ui/useDados';
+import useErros, { ListaErros } from '../../components/ui/useErros';
+import { Erro } from '../../Utils/validacao';
 import { lerNumero, numero } from '../../components/ui/formato';
 import {
     ActionButton, Aviso, BarraAcoes, CaixaTabela, CancelButton, Column, Conclusao,
-    Descricao, Destaque, Destaques, FormTitle, Grid, MensagemErro, Paragrafo, Row, Secao, Tabela, TituloBloco, Unidade, VerticalSplitter,
+    Descricao, Destaque, Destaques, FormTitle, Grid, Paragrafo, Row, Secao, Tabela, TituloBloco, Unidade, VerticalSplitter,
 } from '../../components/ui/estilos';
 import imgModelo from '../../assets/images/exemploCalha.png';
 import imgDesenho from '../../assets/images/exemploCoag.png';
@@ -48,12 +50,14 @@ const COLUNAS_CALHA = [
 
 const GRUPOS = ['Dados da calha', 'Resultados'];
 
+// exemplo didático: calha de 1' (W 30,5 cm) que atende à NBR 12216 como misturador rápido
+const EXEMPLO = { calha: '3', q: '0,3' };
+
 export default function Coagulacao() {
-    const { dados, alterar, limpar, temDados } = useDados('coagulacao', { calha: '', q: '' });
+    const { dados, alterar, limpar, preencher, temDados } = useDados('coagulacao', { calha: '', q: '' });
     const [grupo, setGrupo] = useState(GRUPOS[0]);
     const [calculo, setCalculo] = useState<{ q: number; opcao: number } | null>(null);
-    const [erros, setErros] = useState<string[]>([]);
-    const [invalidos, setInvalidos] = useState<string[]>([]);
+    const { erros, definir, invalido, editado } = useErros();
     const desenho = useRef<HTMLCanvasElement>(null);
 
     const opcao = dados.calha === '' ? -1 : Number(dados.calha);
@@ -61,22 +65,18 @@ export default function Coagulacao() {
 
     function dimensionar() {
         const q = lerNumero(dados.q);
-        const msgs: string[] = [];
-        const campos: string[] = [];
-        if (!calha) {
-            msgs.push('Escolha a calha Parshall.');
-            campos.push('calha');
-        }
+        const encontrados: Erro[] = [];
+        if (!calha) encontrados.push({ mensagem: 'Escolha a calha Parshall.', campos: ['calha'] });
         if (!Number.isFinite(q) || q <= 0) {
-            msgs.push('Informe a vazão Q, em m³/s, maior que zero.');
-            campos.push('q');
+            encontrados.push({ mensagem: 'Informe a vazão Q, em m³/s, maior que zero.', campos: ['q'] });
         } else if (calha && (q < calha.min || q > calha.max)) {
-            msgs.push(`A calha W ${calha.w} cm mede vazões de ${litros(calha.min)} a ${litros(calha.max)} L/s (${numero(calha.min, 4)} a ${numero(calha.max, 4)} m³/s). Ajuste Q ou escolha outra calha.`);
-            campos.push('q');
+            encontrados.push({
+                mensagem: `A calha W ${calha.w} cm mede vazões de ${litros(calha.min)} a ${litros(calha.max)} L/s (${numero(calha.min, 4)} a ${numero(calha.max, 4)} m³/s). Ajuste Q ou escolha outra calha.`,
+                campos: ['q'],
+            });
         }
-        setErros(msgs);
-        setInvalidos(campos);
-        if (msgs.length) return;
+        definir(encontrados);
+        if (encontrados.length) return;
         setCalculo({ q, opcao });
         setGrupo('Resultados');
     }
@@ -90,10 +90,11 @@ export default function Coagulacao() {
                 grupo={grupo}
                 bloqueados={calculo ? [] : ['Resultados']}
                 onGrupo={setGrupo}
-                onLimpar={temDados ? () => { limpar(); setCalculo(null); setErros([]); setInvalidos([]); setGrupo(GRUPOS[0]); } : undefined}
+                onLimpar={temDados ? () => { limpar(); setCalculo(null); definir([]); setGrupo(GRUPOS[0]); } : undefined}
+                onExemplo={() => { preencher(EXEMPLO); definir([]); }}
             >
                 {grupo === 'Dados da calha' && <>
-                    {erros.length > 0 && <MensagemErro role="alert">{erros.map((e) => <div key={e}>{e}</div>)}</MensagemErro>}
+                    <ListaErros erros={erros} />
                     <Row>
                         <Column>
                             <Secao>
@@ -104,19 +105,19 @@ export default function Coagulacao() {
                                         nome="calha"
                                         valor={dados.calha}
                                         vazio="Escolha pela faixa de vazão"
-                                        invalido={invalidos.includes('calha')}
+                                        invalido={invalido('calha')}
                                         dica="W é a largura da garganta. Escolha a calha cuja faixa de vazão inclui a vazão de projeto."
                                         opcoes={CALHAS.map((c, i) => ({ valor: String(i), texto: `W ${c.w} cm (${c.pol}) · ${litros(c.min)} a ${litros(c.max)} L/s` }))}
-                                        onChange={(v) => { alterar('calha', v); setInvalidos([]); }}
+                                        onChange={(v) => { alterar('calha', v); editado('calha'); editado('q'); }}
                                     />
                                     <Campo
                                         rotulo="Q"
                                         nome="q"
                                         unidade="m³/s"
                                         valor={dados.q}
-                                        invalido={invalidos.includes('q')}
+                                        invalido={invalido('q')}
                                         dica="Vazão que passa pela calha (vazão da ETA)."
-                                        onChange={(v) => { alterar('q', v); setInvalidos([]); }}
+                                        onChange={(v) => { alterar('q', v); editado('q'); }}
                                     />
                                 </Grid>
                             </Secao>
