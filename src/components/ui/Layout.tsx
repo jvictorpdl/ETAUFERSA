@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import styled from 'styled-components';
 import logoFaceu from '../../assets/logo-faceu.png';
@@ -143,6 +143,16 @@ export default function Layout({ unidade, children }: { unidade: string; childre
         document.title = `${unidade} · ETA UFERSA`;
     }, [unidade]);
 
+    // no celular as abas rolam na horizontal; a aba aberta fica sempre à vista
+    const abas = useRef<HTMLElement>(null);
+    useEffect(() => {
+        const ativa = abas.current?.querySelector<HTMLElement>('.ativa');
+        const faixa = abas.current;
+        if (ativa && faixa && faixa.scrollWidth > faixa.clientWidth) {
+            faixa.scrollLeft = ativa.offsetLeft - (faixa.clientWidth - ativa.offsetWidth) / 2;
+        }
+    }, [unidade]);
+
     return (
         <Fundo>
             <Cabecalho>
@@ -152,7 +162,7 @@ export default function Layout({ unidade, children }: { unidade: string; childre
             </Cabecalho>
             <Conteudo>
                 <NomeApp>ETA UFERSA</NomeApp>
-                <Abas aria-label="Unidades da ETA">
+                <Abas ref={abas} aria-label="Unidades da ETA">
                     {UNIDADES.map((u) => (
                         <Aba
                             key={u.para}
