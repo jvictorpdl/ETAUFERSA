@@ -1,4 +1,4 @@
-import { multiply, inv } from 'mathjs';
+import { resolverSistema } from './algebra';
 import { corrigirCamaras } from './flocCorrecao';
 
 const Floc5 = {
@@ -13,11 +13,8 @@ const Floc5 = {
         var bm = [[Ttf], [0], [0], [0], [0]];
 
 
-        var inve = inv(am);
-        var rm1 = multiply(inve, bm);
-
-        var rm = [] as any;
-        rm = rm1;
+        // tempos das câmaras (min): G·t igual em todas e soma igual ao tempo total
+        var rm = resolverSistema(am, bm.map((linha) => linha[0]));
 
         var t1 = rm[0];
         var t2 = rm[1];
